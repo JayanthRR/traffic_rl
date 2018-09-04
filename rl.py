@@ -1,6 +1,6 @@
 import numpy as np
 from random import choice
-from matplotlib import pyplot as plt
+# from matplotlib import pyplot as plt
 import pickle
 from graphs import *
 # np.random.RandomState(seed=10)
