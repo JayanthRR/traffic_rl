@@ -68,7 +68,7 @@ def generate_column_stochastic_matrix(n):
 
 
 def state_transition(A, xt, wt, mean=0, sigma=0.1):
-    c = 0.1
+    c = 1
     if wt is None:
         wt = 1 * gaussian(len(xt), mean, sigma)
 
