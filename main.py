@@ -9,23 +9,23 @@ import os
 marker_1 = itertools.cycle(('X', '+', 'o', '.', '*', '-', '1', '2', '3', '4', '5'))
 
 config = {"num episodes": 5000,
-          "epsilon": 0.4,
+          "epsilon": 0.2,
           "gamma": 1,
-          "learning rate": 0.01,
+          "learning rate": 0.1,
           "exploration decay": 0.99,
           "size": 50,
           "quantize": False,
-          "quantize type": "log",
-          "algorithm": ["qlearning", "sarsa"],
-          "lookahead": [0, 5, 10],
+          "quantize type": "uniform",
+          "algorithm": ["qlearning"],
+          "lookahead": [0],
           "num trials": 100,
           "test": {0: {"algorithm": "dijkstra",
                        "lookahead": 0
                        },
-                   1: {"algorithm": "dijkstra",
-                       "lookahead": 5
-                       },
-                   2: {"algorithm": "sarsa"},
+                   # 1: {"algorithm": "dijkstra",
+                   #     "lookahead": 5
+                   #     },
+                   # 2: {"algorithm": "sarsa"},
                    3: {"algorithm": "qlearning"}
                    }
           }
@@ -97,7 +97,7 @@ def train(config, folder):
     with open(env_file, "wb") as f:
         pickle.dump(env, f)
     args = [(copy.deepcopy(env), config, algo, folder) for algo in rl_algo]
-    pool = Pool(processes=2)
+    pool = Pool(processes=1)
     pool.map(execute_training, args)
     # for arg in args:
     #     execute_training(arg)
@@ -146,7 +146,7 @@ def test(config, folder):
         with open(agent_file, "rb") as f:
             agent[algo] = pickle.load(f)
 
-    pool = Pool(processes=4)
+    pool = Pool(processes=2)
     for trial in range(num_trials):
         W = []
         for i in range(time_steps):

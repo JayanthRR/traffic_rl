@@ -21,7 +21,7 @@ def cost_function(x):
     # think of a better cost function that is smooth and monotone increasing
     #     return log(1+x)
     # return log(1+x)
-    return np.power(x, 1/25, dtype=np.float64)
+    return np.power(x, 2, dtype=np.float64)
     # return x
 
 
