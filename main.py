@@ -146,6 +146,7 @@ def test(config, folder):
         with open(agent_file, "rb") as f:
             agent[algo] = pickle.load(f)
 
+    pool = Pool(processes=4)
     for trial in range(num_trials):
         W = []
         for i in range(time_steps):
@@ -154,7 +155,6 @@ def test(config, folder):
         env.reset()
 
         args = [(copy.deepcopy(env), agent, W, test_config, k) for k in test_config.keys()]
-        pool = Pool(processes=4)
         logs = pool.map(evaluate, args)
         # for arg in args:
         #     evaluate(arg)
@@ -179,7 +179,7 @@ def run(config):
 
     train(config, folder)
     print("completed training ...")
-    test(config, folder)
+    # test(config, folder)
     print("completed testing ...")
 
     # plt.close()
@@ -193,6 +193,7 @@ def run(config):
     # plt.legend()
     # plt.savefig('plots/comparision step lengths.pdf', transparent=True, bbox_inches='tight', pad_inches=0)
     # plt.close()
+
 
 
 if __name__ == "__main__":
