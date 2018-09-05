@@ -162,6 +162,7 @@ def test(config, folder):
         for ind in test_config.keys():
             logdict[ind]["rewards"].append(logs[ind]["rewards"])
             logdict[ind]["path"].append(logs[ind]["path"])
+        gc.collect()
 
     log_file = folder + "logs.p"
     with open(log_file, "wb") as f:
