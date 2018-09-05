@@ -192,7 +192,7 @@ class TrafficEnv:
             return -cost_function(self.xt[self.current_edge])
 
     def state_transition(self, noise_t=None):
-        c = 0.1
+        c = 1
 
         if noise_t is None:
             noise_t = gaussian(self.size)
