@@ -4,8 +4,8 @@ from main import test
 import os
 
 
-# folders = glob.glob("/cc/traffic_rl/logs/2018*/")
-folders = glob.glob("/home/jayanth/thesis/traffic_rl/logs/2018*/")
+folders = glob.glob("/home/cc/traffic_rl/logs/2018*/")
+# folders = glob.glob("/home/jayanth/thesis/traffic_rl/logs/2018*/")
 
 for folder in folders:
 
