@@ -13,7 +13,7 @@ config = {"num episodes": 10000,
           "gamma": 1,
           "learning rate": 0.1,
           "exploration decay": 0.99,
-          "size": 130,
+          "size": 160,
           "quantize": False,
           "quantize type": "uniform",
           "algorithm": ["qlearning"],
@@ -199,4 +199,6 @@ def run(config):
 
 if __name__ == "__main__":
 
-    run(config)
+    for size in [160,170,180]:
+        config["size"]=size
+        run(config)
