@@ -8,12 +8,12 @@ import os
 
 marker_1 = itertools.cycle(('X', '+', 'o', '.', '*', '-', '1', '2', '3', '4', '5'))
 
-config = {"num episodes": 5000,
+config = {"num episodes": 10000,
           "epsilon": 0.2,
           "gamma": 1,
           "learning rate": 0.1,
           "exploration decay": 0.99,
-          "size": 50,
+          "size": 130,
           "quantize": False,
           "quantize type": "uniform",
           "algorithm": ["qlearning"],
@@ -26,7 +26,7 @@ config = {"num episodes": 5000,
                    #     "lookahead": 5
                    #     },
                    # 2: {"algorithm": "sarsa"},
-                   3: {"algorithm": "qlearning"}
+                   1: {"algorithm": "qlearning"}
                    }
           }
 
@@ -180,7 +180,7 @@ def run(config):
 
     train(config, folder)
     print("completed training ...")
-    # test(config, folder)
+    test(config, folder)
     print("completed testing ...")
 
     # plt.close()
