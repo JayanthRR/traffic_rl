@@ -186,7 +186,7 @@ def const_dijkstra_policy(A, xt, source, destination, term_flag=False, signal_fl
             return source
         else:
             return None
-
+    path.append(destination)
     prev = destination
     while prev is not None:
         temp = edges[prev].parent

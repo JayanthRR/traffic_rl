@@ -11,7 +11,7 @@ font = {'family' : 'normal',
 
 # matplotlib.rc('font', **font)
 
-folders = glob.glob("/home/jayanth/thesis/traffic_rl/logs/2018*/")
+folders = glob.glob("/home/jayanth/thesis/traffic_rl/logs/2018-09-05-19-09-49/")
 cross_loss = dict()
 
 for folder in folders:
@@ -26,16 +26,20 @@ for folder in folders:
 
     print("config size", config["size"])
     test_config = config["test"]
+    print(test_config.keys())
     cross_loss[config["size"]] = dict()
     cross_loss[config["size"]][0] = dict()
     cross_loss[config["size"]][1] = dict()
+    cross_loss[config["size"]][2] = dict()
+
     #### Testing plots
 
     if "logs.p" in files:
         with open(folder + "logs.p", "rb") as f:
             logdict = pickle.load(f)
 
-        for ind in [0, 1]:
+        for ind in test_config.keys():
+        # for ind in [0, 1]:
             rewards = logdict[ind]["rewards"]
             # if test_config[ind]["algorithm"]=="dijkstra":
             #     plt.plot(list(range(len(rewards))), rewards, marker=next(marker),
@@ -51,8 +55,8 @@ for folder in folders:
         plt.savefig(folder+"Test results rewards.pdf", transparent=True, bbox_inches='tight',
                     pad_inches=0)
         plt.close()
-        # for ind in test_config.keys():
-        for ind in [0, 1]:
+        for ind in test_config.keys():
+        # for ind in [0, 1]:
             paths = logdict[ind]["path"]
             # if test_config[ind]["algorithm"]=="dijkstra":
             #     plt.plot(list(range(len(paths))), [len(path) for path in paths], marker=next(marker),

@@ -4,8 +4,8 @@ from main import test
 import os
 
 
-folders = glob.glob("/home/cc/traffic_rl/logs/2018*/")
-# folders = glob.glob("/home/jayanth/thesis/traffic_rl/logs/2018*/")
+# folders = glob.glob("/home/cc/traffic_rl/logs/2018*/")
+folders = glob.glob("/home/jayanth/thesis/traffic_rl/logs/2018-09-05-19-09-49/")
 
 for folder in folders:
 
@@ -14,7 +14,7 @@ for folder in folders:
     print(files)
 
     if not "logs.p" in files:
-        if ("qlearning.p" in files) and ("sarsa.p" in files):
+        if ("qlearning.p" in files):
 
             with open(folder+"config.p", "rb") as f:
                 config=pickle.load(f)
@@ -22,6 +22,9 @@ for folder in folders:
             config["test"][2] = {"algorithm": "const_dijkstra",
                                  "lookahead": 0
                                  }
+            with open(folder+"config.p", "wb") as f:
+                pickle.dump(config, f)
+
             test(config, folder)
         else:
             print("testing not done")
