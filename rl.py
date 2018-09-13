@@ -538,7 +538,13 @@ def evaluate_policies(env, W, policy="dijkstra", lookahead=0, const_flag=False):
                     xt = state_transition(env.transition_matrix, xt, env.current_edge, env.destination)
 
                 const_path = const_dijkstra_policy(env.transition_matrix, xt, env.current_edge, env.destination)
-                decision = const_path.pop()
+                if not const_path:
+                    decision = const_path.pop()
+                else:
+                    print(policy, "no path")
+                    reward_incurred = -inf
+                    break
+
             else:
                 decision = const_path.pop()
         else:
