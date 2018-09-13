@@ -510,13 +510,14 @@ def train_agent(agent, num_episodes, discount_factor,
     return agent, training_rewards, total_rewards
 
 
-def evaluate_policies(env, W, policy="dijkstra", lookahead=0):
+def evaluate_policies(env, W, policy="dijkstra", lookahead=0, const_flag=False):
 
     if policy == "dijkstra":
         control = dijkstra_policy
     else:
         control = greedy
 
+    const_path = []
     aggr_reward = list()
     path_taken = list()
     path_taken.append(env.source)
@@ -531,7 +532,17 @@ def evaluate_policies(env, W, policy="dijkstra", lookahead=0):
         for look in range(lookahead):
             xt = state_transition(env.transition_matrix, xt, env.current_edge, env.destination)
 
-        decision = control(env.transition_matrix, xt, env.current_edge, env.destination)
+        if const_flag:
+            if not const_path:
+                for look in range(lookahead):
+                    xt = state_transition(env.transition_matrix, xt, env.current_edge, env.destination)
+
+                const_path = const_dijkstra_policy(env.transition_matrix, xt, env.current_edge, env.destination)
+                decision = const_path.pop()
+            else:
+                decision = const_path.pop()
+        else:
+            decision = control(env.transition_matrix, xt, env.current_edge, env.destination)
 
         path_taken.append(decision)
 

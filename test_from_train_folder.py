@@ -19,12 +19,15 @@ for folder in folders:
             with open(folder+"config.p", "rb") as f:
                 config=pickle.load(f)
 
+            config["test"][2] = {"algorithm": "const_dijkstra",
+                                 "lookahead": 0
+                                 }
             test(config, folder)
         else:
-            print("training not done")
+            print("testing not done")
             for file in files:
                 os.remove(folder + file)
             os.rmdir(folder)
 
     else:
-        print("training done")
+        print("training and testing done")

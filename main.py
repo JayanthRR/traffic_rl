@@ -111,6 +111,9 @@ def evaluate(args):
     if algo in ["qlearning", "sarsa"]:
         agent[algo].env = env
         reward, _, path = evaluate_rl_policy(agent[algo], W)
+    elif algo in ["const_dijkstra"]:
+        lookahead = config[config_id]["lookahead"]
+        reward, _, path = evaluate_policies(env, W, algo, lookahead, const_flag=True)
     else:
         lookahead = config[config_id]["lookahead"]
         reward, _, path = evaluate_policies(env, W, algo, lookahead)

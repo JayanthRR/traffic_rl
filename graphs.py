@@ -169,6 +169,36 @@ def dijkstra_policy(A, xt, source, destination, term_flag=False, signal_flag=Fal
     return decision
 
 
+def const_dijkstra_policy(A, xt, source, destination, term_flag=False, signal_flag=False):
+    # chooses just the next edge to traverse
+    #
+    # if signal_flag and st[source] == 1:
+    #     # print("signal")
+    #     return source
+
+    decision = None
+
+    path = []
+    edges, colored_edges = dijkstra(A, xt, source, destination)
+
+    if edges[destination].distance is inf:
+        if not term_flag:
+            return source
+        else:
+            return None
+
+    prev = destination
+    while prev is not None:
+        temp = edges[prev].parent
+        if temp == source:
+            decision = prev
+            break
+        path.append(temp)
+        prev = temp
+
+    return path
+
+
 def policy_fn(A, xt, source, destination, policy="dijkstra", term_flag=False, signal_flag=False, lookahead=0):
 
     if policy == "dijkstra":
