@@ -11,7 +11,8 @@ font = {'family' : 'normal',
 
 # matplotlib.rc('font', **font)
 
-folders = glob.glob("/home/jayanth/thesis/traffic_rl/logs/2018-09-05-19-09-49/")
+# folders = glob.glob("/home/jayanth/thesis/traffic_rl/logs/2018-09-05-19-09-49/")
+folders = glob.glob("/home/jayanth/thesis/traffic_rl/logs_v2/2018*/")
 cross_loss = dict()
 
 for folder in folders:
@@ -23,6 +24,10 @@ for folder in folders:
 
     with open(folder + "config.p", "rb") as f:
         config = pickle.load(f)
+
+    if config["size"]==70:
+        # some error with data collection. Did not record const_dijkstra test for this log
+        continue
 
     print("config size", config["size"])
     test_config = config["test"]
@@ -58,6 +63,7 @@ for folder in folders:
         for ind in test_config.keys():
         # for ind in [0, 1]:
             paths = logdict[ind]["path"]
+            print([len(path) for path in paths])
             # if test_config[ind]["algorithm"]=="dijkstra":
             #     plt.plot(list(range(len(paths))), [len(path) for path in paths], marker=next(marker),
             #              label="num steps: " + test_config[ind]["algorithm"]+" lookahead: "+str(test_config[ind]["lookahead"]))
@@ -112,11 +118,14 @@ for folder in folders:
 
 plt.close()
 
-for ind in [0,1]:
+for ind in [0,1,2]:
     if ind==0:
         plt.plot(sorted(cross_loss.keys()), [cross_loss[size][ind]["avg rewards"] for size in sorted(cross_loss.keys())], label="dijkstra policy", marker=next(marker))
-    else:
+    elif ind==1:
         plt.plot(sorted(cross_loss.keys()), [cross_loss[size][ind]["avg rewards"] for size in sorted(cross_loss.keys())], label="Q learning policy", marker=next(marker))
+    else:
+        plt.plot(sorted(cross_loss.keys()), [cross_loss[size][ind]["avg rewards"] for size in sorted(cross_loss.keys())], label="const Dijkstra policy", marker=next(marker))
+
 
 plt.legend()
 plt.xlabel("size of network")
@@ -125,11 +134,13 @@ plt.title("Average cost accrued")
 plt.savefig("avg rewards.pdf", transparent=True, bbox_inches='tight', pad_inches=0)
 
 plt.close()
-for ind in [0,1]:
+for ind in [0,1,2]:
     if ind==0:
         plt.plot(sorted(cross_loss.keys()), [cross_loss[size][ind]["avg steps"] for size in sorted(cross_loss.keys())], label="dijkstra policy", marker=next(marker))
-    else:
+    elif ind==1:
         plt.plot(sorted(cross_loss.keys()), [cross_loss[size][ind]["avg steps"] for size in sorted(cross_loss.keys())], label="Q learning policy", marker=next(marker))
+    else:
+        plt.plot(sorted(cross_loss.keys()), [cross_loss[size][ind]["avg steps"] for size in sorted(cross_loss.keys())], label="const Dijkstra policy", marker=next(marker))
 
 plt.legend()
 plt.xlabel("size of network")
