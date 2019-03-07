@@ -17,20 +17,24 @@ class Edge:
         self.parent = None
 
 
-def cost_function(x):
+def cost_function(x, cmin=0, rho=1):
     # think of a better cost function that is smooth and monotone increasing
     #     return log(1+x)
     # return log(1+x)
-    return np.power(x, 2, dtype=np.float64)
+    return cmin + rho * np.power(x, 2, dtype=np.float64)
+    # return np.power(x, 2, dtype=np.float64)
     # return x
 
 
-def compute_cost(xt, current_link, destination):
+def compute_cost(xt, current_link, destination, cost_dict=None):
     # return xt[current_link]
+
     if current_link == destination:
         return 0
     else:
-        return cost_function(xt[current_link])
+        if cost_dict:
+            cmin, rho = cost_dict[current_link]
+        return cost_function(xt[current_link], cmin, rho)
 
 
 def get_successor_edges(A, current_edge):
@@ -68,7 +72,7 @@ def is_exists_path(A, source, destination):
     return False
 
 
-def greedy(A, xt, source, destination, term_flag=False, signal_flag=False):
+def greedy(A, xt, source, destination, costdict=None, term_flag=False, signal_flag=False):
     # flag determines what to do when no decision is taken. (Should it stay on the same edge or terminate? )
     # source is the current link and the destination is the destination link
 
@@ -101,7 +105,7 @@ add any significance apart from determining the adjacent edges. The cost computa
 """
 
 
-def dijkstra(A, xt, source, destination):
+def dijkstra(A, xt, source, destination, costdict=None):
     edges = [Edge() for _ in range(len(xt))]
     edges[source].distance = 0
 
@@ -120,11 +124,11 @@ def dijkstra(A, xt, source, destination):
         adj = get_successor_edges(A, current_edge)
 
         for j in adj:
-            if edges[j].distance > edges[current_edge].distance + compute_cost(xt, j, destination):
+            if edges[j].distance > edges[current_edge].distance + compute_cost(xt, j, destination, costdict):
                 temp = (edges[j].distance, j)
                 q = list(q)
                 q.remove(temp)
-                edges[j].distance = edges[current_edge].distance + compute_cost(xt, j, destination)
+                edges[j].distance = edges[current_edge].distance + compute_cost(xt, j, destination, costdict)
                 edges[j].parent = current_edge
                 q.append((edges[j].distance, j))
                 heapq.heapify(q)
@@ -139,7 +143,7 @@ def dijkstra(A, xt, source, destination):
     return edges, colored_edges
 
 
-def dijkstra_policy(A, xt, source, destination, term_flag=False, signal_flag=False):
+def dijkstra_policy(A, xt, source, destination, costdict, term_flag=False, signal_flag=False):
     # chooses just the next edge to traverse
     #
     # if signal_flag and st[source] == 1:
@@ -149,7 +153,7 @@ def dijkstra_policy(A, xt, source, destination, term_flag=False, signal_flag=Fal
     decision = None
 
     path = []
-    edges, colored_edges = dijkstra(A, xt, source, destination)
+    edges, colored_edges = dijkstra(A, xt, source, destination, costdict)
 
     if edges[destination].distance is inf:
         if not term_flag:
@@ -169,7 +173,7 @@ def dijkstra_policy(A, xt, source, destination, term_flag=False, signal_flag=Fal
     return decision
 
 
-def const_dijkstra_policy(A, xt, source, destination, term_flag=False, signal_flag=False):
+def const_dijkstra_policy(A, xt, source, destination, costdict, term_flag=False, signal_flag=False):
     # chooses just the next edge to traverse
     #
     # if signal_flag and st[source] == 1:
@@ -179,7 +183,7 @@ def const_dijkstra_policy(A, xt, source, destination, term_flag=False, signal_fl
     decision = None
 
     path = []
-    edges, colored_edges = dijkstra(A, xt, source, destination)
+    edges, colored_edges = dijkstra(A, xt, source, destination, costdict)
 
     if edges[destination].distance is inf:
         if not term_flag:
