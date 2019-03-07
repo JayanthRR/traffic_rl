@@ -97,7 +97,7 @@ def train(config, folder):
 
     cmin = np.random.uniform(0.1, 0.2, size=(size,))
     cmax = np.random.uniform(1, 2, size=(size,))
-    costdict = [(cm, cx) for (cm, cx) in zip(cmin, cmax)]
+    costdict = [(cm, 1) for (cm, cx) in zip(cmin, cmax)]
 
     env = TrafficEnv(transition_matrix, x_init, source, destination, costdict, quantize=quantize, type=quantize_type)
 
