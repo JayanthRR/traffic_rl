@@ -505,7 +505,7 @@ def train_agent(agent, num_episodes, discount_factor,
         training_rewards.append(episode_rewards)
         total_rewards.append(total_reward)
 
-        if episode % 100 == 0:
+        if episode % 10 == 0:
             print("episode: ", episode, len(episode_path))
 
         episode += 1
