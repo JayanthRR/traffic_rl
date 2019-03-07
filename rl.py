@@ -444,7 +444,7 @@ def train_agent(agent, num_episodes, discount_factor,
                     target_diff = MIN_W
 
                 agent.gradient_update(action, target_diff, state)
-                print("found")
+                # print("found")
                 break
 
             if qlearning:
