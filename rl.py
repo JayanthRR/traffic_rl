@@ -496,6 +496,12 @@ def train_agent(agent, num_episodes, discount_factor,
             action = next_action
             steps += 1
 
+            if steps == 10* agent.env.size:
+
+                break
+
+
+
         training_rewards.append(episode_rewards)
         total_rewards.append(total_reward)
 

@@ -202,9 +202,8 @@ def run(config):
     # plt.close()
 
 
-
 if __name__ == "__main__":
 
-    for size in [400, 420, 440]:
+    for size in [300, 320, 340]:
         config["size"]=size
         run(config)
