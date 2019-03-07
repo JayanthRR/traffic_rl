@@ -139,7 +139,7 @@ def test(config, folder):
 
     num_trials = config["num trials"]
     size = config["size"]
-    time_steps = size
+    time_steps = 5*size
     test_config = config["test"]
     # print(test_config)
     logdict = dict().fromkeys(test_config.keys())
