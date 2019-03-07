@@ -26,7 +26,10 @@ config = {"num episodes": 10000,
                    #     "lookahead": 5
                    #     },
                    # 2: {"algorithm": "sarsa"},
-                   1: {"algorithm": "qlearning"}
+                   1: {"algorithm": "qlearning"},
+                   2: {"algorithm": "const_dijkstra",
+                       "lookahead": 0
+                       }
                    }
           }
 
@@ -83,7 +86,7 @@ def train(config, folder):
             destination, min_len = longest_destination(transition_matrix, source, min_len=int(size / 4))
         else:
             break
-
+    print("A generated")
     quantize = config["quantize"]
     quantize_type = config["quantize type"]
     rl_algo = config["algorithm"]
@@ -202,6 +205,6 @@ def run(config):
 
 if __name__ == "__main__":
 
-    for size in [160,170,180]:
+    for size in [400, 420, 440]:
         config["size"]=size
         run(config)

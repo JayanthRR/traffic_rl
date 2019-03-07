@@ -600,7 +600,7 @@ def evaluate_rl_policy(traffic_agent, W):
         reward_incurred += reward
         aggr_reward.append(reward_incurred)
         count += 1
-        if count == len(wt):
+        if count == 2*len(wt):
             print("exceeded time limit")
             break
 
