@@ -129,11 +129,16 @@ class TrafficEnv:
         self.quantize_state()
         self.quantize_flag = quantize
         if not self.quantize_flag:
-            self.state = np.hstack((self.xt, self.current_edge_one_hot))
+            # self.state = np.hstack((1, self.xt, np.square(self.xt), self.current_edge_one_hot))
+            self.state_from_xt()
             self.q_function = QFunction(len(self.state), self.size)
         else:
             self.state = np.hstack((self.quantized_xt, self.current_edge_one_hot))/(self.size + 1)
             self.q_function = QFunction(len(self.state), self.size)
+
+    def state_from_xt(self):
+
+        self.state = np.hstack((1, self.xt, np.square(self.xt), self.current_edge_one_hot))
 
     def reset(self):
         self.current_edge = self.source
@@ -142,15 +147,18 @@ class TrafficEnv:
         self.current_edge_one_hot[self.source] = 1
         self.random_init()
         if not self.quantize_flag:
-            self.state = np.hstack((self.xt, self.current_edge_one_hot))
+            # self.state = np.hstack((self.xt, self.current_edge_one_hot))
+            # self.state = np.hstack((1, self.xt, np.square(self.xt), self.current_edge_one_hot))
+            self.state_from_xt()
         else:
+
             self.state = np.hstack((self.quantized_xt, self.current_edge_one_hot))/(self.size + 1)
 
     def random_init(self):
         np.random.seed()
         self.xt = np.random.rand(self.size)
         self.xt = self.xt/self.xt.sum()
-        self.quantize_state()
+        # self.quantize_state()
 
     def quantize_state(self):
         self.quantized_xt = np.zeros(self.size*self.qlen)
@@ -200,7 +208,7 @@ class TrafficEnv:
             noise_t = gaussian(self.size)
         temp = np.matmul(self.transition_matrix, self.xt) + c * noise_t
         self.xt = np.minimum(np.maximum(temp, np.zeros(self.size)), np.ones(self.size))
-        self.quantize_state()
+        # self.quantize_state()
 
     def state_update(self):
         self.current_edge_one_hot[self.prev_edge] = 0
@@ -208,7 +216,9 @@ class TrafficEnv:
         if self.quantize_flag:
             self.state = np.hstack((self.quantized_xt, self.current_edge_one_hot))
         else:
-            self.state = np.hstack((self.xt, self.current_edge_one_hot))
+            self.state_from_xt()
+            # self.state = np.hstack((1, self.xt, np.square(self.xt), self.current_edge_one_hot))
+            # self.state = np.hstack((self.xt, self.current_edge_one_hot))
 
     def get_next_state_reward(self, action):
         # self.state_transition()
