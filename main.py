@@ -6,6 +6,7 @@ import datetime
 import os
 from tqdm import tqdm
 
+
 marker_1 = itertools.cycle(('X', '+', 'o', '.', '*', '-', '1', '2', '3', '4', '5'))
 
 config = {"num episodes": 10000,
@@ -94,7 +95,11 @@ def train(config, folder):
     x_init = np.random.rand(size)
     x_init = x_init / x_init.sum()
 
-    env = TrafficEnv(transition_matrix, x_init, source, destination, quantize=quantize, type=quantize_type)
+    cmin = np.random.uniform(0.1, 0.2, size=(size,))
+    cmax = np.random.uniform(1, 2, size=(size,))
+    costdict = [(cm, cx) for (cm, cx) in zip(cmin, cmax)]
+
+    env = TrafficEnv(transition_matrix, x_init, source, destination, costdict, quantize=quantize, type=quantize_type)
 
     env_file = folder + "env.p"
     with open(env_file, "wb") as f:
@@ -204,6 +209,6 @@ def run(config):
 
 if __name__ == "__main__":
 
-    for size in [300, 320, 340]:
+    for size in [100]:
         config["size"]=size
         run(config)

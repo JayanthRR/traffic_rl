@@ -31,7 +31,7 @@ for folder in folders:
 
     print("config size", config["size"])
     test_config = config["test"]
-    print(test_config.keys())
+    # print(test_config.keys())
     cross_loss[config["size"]] = dict()
     cross_loss[config["size"]][0] = dict()
     cross_loss[config["size"]][1] = dict()
@@ -63,7 +63,7 @@ for folder in folders:
         for ind in test_config.keys():
         # for ind in [0, 1]:
             paths = logdict[ind]["path"]
-            print([len(path) for path in paths])
+            # print([len(path) for path in paths])
             # if test_config[ind]["algorithm"]=="dijkstra":
             #     plt.plot(list(range(len(paths))), [len(path) for path in paths], marker=next(marker),
             #              label="num steps: " + test_config[ind]["algorithm"]+" lookahead: "+str(test_config[ind]["lookahead"]))

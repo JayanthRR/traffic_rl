@@ -109,9 +109,10 @@ def get_bin_endings(min=0.0, max=1.0, size=15, type="log"):
 
 
 class TrafficEnv:
-    def __init__(self, transition_matrix, x_init, source, destination, quantize=True, qlen=10,
+    def __init__(self, transition_matrix, x_init, source, destination, costdict, quantize=True, qlen=10,
                  type="uniform"):
         self.transition_matrix = transition_matrix
+        self.costdict = costdict
         self.xt = x_init
         self.source = source
         self.destination = destination
@@ -189,7 +190,8 @@ class TrafficEnv:
         if action == self.destination:
             return 0
         else:
-            return -cost_function(self.xt[self.current_edge])
+            cmin, rho = self.costdict[self.current_edge]
+            return -cost_function(self.xt[self.current_edge], cmin, rho)
 
     def state_transition(self, noise_t=None):
         c = 1
@@ -546,7 +548,7 @@ def evaluate_policies(env, W, policy="dijkstra", lookahead=0, const_flag=False):
                 for look in range(lookahead):
                     xt = state_transition(env.transition_matrix, xt, env.current_edge, env.destination)
 
-                const_path = const_dijkstra_policy(env.transition_matrix, xt, env.current_edge, env.destination)
+                const_path = const_dijkstra_policy(env.transition_matrix, xt, env.current_edge, env.destination, env.costdict)
                 if const_path:
                     decision = const_path.pop()
                 else:
@@ -557,7 +559,7 @@ def evaluate_policies(env, W, policy="dijkstra", lookahead=0, const_flag=False):
             else:
                 decision = const_path.pop()
         else:
-            decision = control(env.transition_matrix, xt, env.current_edge, env.destination)
+            decision = control(env.transition_matrix, xt, env.current_edge, env.destination, env.costdict)
 
         path_taken.append(decision)
 
