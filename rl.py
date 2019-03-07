@@ -417,7 +417,7 @@ def train_agent(agent, num_episodes, discount_factor,
 
     while episode < num_episodes:
         episode_path = []
-        print("episode: ", episode)
+
         episode_rewards = []
         total_reward = 0
         agent.env.reset()
@@ -498,9 +498,12 @@ def train_agent(agent, num_episodes, discount_factor,
 
         training_rewards.append(episode_rewards)
         total_rewards.append(total_reward)
+
+        if episode % 100 == 0:
+            print("episode: ", episode, len(episode_path))
+
         episode += 1
         agent.epsilon = agent.epsilon * agent.exploration_decay
-        print(len(episode_path))
 
     # plt.plot([len(r) for r in training_rewards], marker=next(marker), label="num steps")
     # plt.plot(total_rewards, marker=next(marker), label="total rewards")
@@ -600,7 +603,7 @@ def evaluate_rl_policy(traffic_agent, W):
         reward_incurred += reward
         aggr_reward.append(reward_incurred)
         count += 1
-        if count == 2*len(wt):
+        if count == 5*len(wt):
             print("exceeded time limit")
             break
 

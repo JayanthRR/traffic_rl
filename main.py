@@ -4,7 +4,7 @@ import gc
 import pickle
 import datetime
 import os
-
+from tqdm import tqdm
 
 marker_1 = itertools.cycle(('X', '+', 'o', '.', '*', '-', '1', '2', '3', '4', '5'))
 
@@ -18,7 +18,7 @@ config = {"num episodes": 10000,
           "quantize type": "uniform",
           "algorithm": ["qlearning"],
           "lookahead": [0],
-          "num trials": 100,
+          "num trials": 200,
           "test": {0: {"algorithm": "dijkstra",
                        "lookahead": 0
                        },
@@ -152,8 +152,8 @@ def test(config, folder):
         with open(agent_file, "rb") as f:
             agent[algo] = pickle.load(f)
 
-    pool = Pool(processes=2)
-    for trial in range(num_trials):
+    pool = Pool(processes=3)
+    for trial in tqdm(range(num_trials)):
         W = []
         for i in range(time_steps):
             W.append(gaussian(size, 0, 0.1))

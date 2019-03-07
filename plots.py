@@ -12,7 +12,7 @@ font = {'family' : 'normal',
 # matplotlib.rc('font', **font)
 
 # folders = glob.glob("/home/jayanth/thesis/traffic_rl/logs/2018-09-05-19-09-49/")
-folders = glob.glob("/home/jayanth/thesis/traffic_rl/logs_v2/2018*/")
+folders = glob.glob("/home/jayanth/2019/traffic_rl/logs/2019*/")
 cross_loss = dict()
 
 for folder in folders:
