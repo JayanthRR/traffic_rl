@@ -45,7 +45,7 @@ def longest_destination(transition_matrix, source, min_len=None):
     return ret, path_lens[ret]
 
 
-def generate_column_stochastic_matrix(n):
+def generate_column_stochastic_matrix(n, sparsity):
     # Doesn't generate a sparse matrix. The degree of each link can be as high as n-1.
     # Todo: Think of how to make a sparse matrix (to mimic road network geometry)
 
@@ -59,7 +59,7 @@ def generate_column_stochastic_matrix(n):
     for i in range(n):
         while True:
             temp = np.random.rand(n)
-            mask = np.random.choice([0,1], (n), p=[0.9,0.1])
+            mask = np.random.choice([0,1], (n), p=[1-sparsity, sparsity])
             temp = temp * mask
             if temp.sum() > 0:
                 A[:, i] = temp/temp.sum()
@@ -67,10 +67,10 @@ def generate_column_stochastic_matrix(n):
     return A
 
 
-def state_transition(A, xt, wt, mean=0, sigma=0.1):
-    c = 1
+def state_transition(A, xt, wt, mean=0, sigma=0.01, c=1):
+
     if wt is None:
-        wt = 1 * gaussian(len(xt), mean, sigma)
+        wt = c * gaussian(len(xt), mean, sigma)
 
     x_t1 = np.matmul(A, xt) + wt
 
@@ -79,7 +79,7 @@ def state_transition(A, xt, wt, mean=0, sigma=0.1):
     return x_t1
 
 
-def gaussian(k, mean=0, sigma=0.01):
+def gaussian(k, mean=0.0, sigma=0.01):
     return np.random.normal(loc=mean, scale=sigma, size=k)
 
 
@@ -109,9 +109,13 @@ def get_bin_endings(min=0.0, max=1.0, size=15, type="log"):
 
 
 class TrafficEnv:
-    def __init__(self, transition_matrix, x_init, source, destination, quantize=True, qlen=10,
-                 type="uniform"):
+    def __init__(self, transition_matrix, x_init, source, destination, noise_var=0.01, noise_amp=1, noise_mean=0):
+
         self.transition_matrix = transition_matrix
+        self.noise_var = noise_var
+        self.noise_amp = noise_amp
+        self.noise_mean = noise_mean
+
         self.xt = x_init
         self.source = source
         self.destination = destination
@@ -121,18 +125,11 @@ class TrafficEnv:
         self.actions = list(range(self.size))
         self.current_edge_one_hot = np.zeros((len(x_init)))
         self.current_edge_one_hot[self.source] = 1
-        self.qlen = qlen
-        self.quantized_xt = np.zeros(self.size*qlen)
+
         self.type_ = type
-        self.quantize_bin_endings = get_bin_endings(min=0, max=1, size=qlen, type=type)
-        self.quantize_state()
-        self.quantize_flag = quantize
-        if not self.quantize_flag:
-            self.state = np.hstack((self.xt, self.current_edge_one_hot))
-            self.q_function = QFunction(len(self.state), self.size)
-        else:
-            self.state = np.hstack((self.quantized_xt, self.current_edge_one_hot))/(self.size + 1)
-            self.q_function = QFunction(len(self.state), self.size)
+
+        self.state = np.hstack((self.xt, self.current_edge_one_hot))
+        self.q_function = QFunction(len(self.state), self.size)
 
     def reset(self):
         self.current_edge = self.source
@@ -140,27 +137,13 @@ class TrafficEnv:
         self.current_edge_one_hot = np.zeros((len(self.xt)))
         self.current_edge_one_hot[self.source] = 1
         self.random_init()
-        if not self.quantize_flag:
-            self.state = np.hstack((self.xt, self.current_edge_one_hot))
-        else:
-            self.state = np.hstack((self.quantized_xt, self.current_edge_one_hot))/(self.size + 1)
+
+        self.state = np.hstack((self.xt, self.current_edge_one_hot))
 
     def random_init(self):
         np.random.seed()
         self.xt = np.random.rand(self.size)
         self.xt = self.xt/self.xt.sum()
-        self.quantize_state()
-
-    def quantize_state(self):
-        self.quantized_xt = np.zeros(self.size*self.qlen)
-        for i in range(self.size):
-            for ind in range(self.qlen):
-                if self.xt[i] > self.quantize_bin_endings[ind]:
-                    continue
-                else:
-                    break
-
-            self.quantized_xt[i*self.qlen + ind] = 1/(self.size + 1)
 
     def get_successor_edges(self, current_edge=None):
         adj = []
@@ -192,21 +175,17 @@ class TrafficEnv:
             return -cost_function(self.xt[self.current_edge])
 
     def state_transition(self, noise_t=None):
-        c = 1
 
         if noise_t is None:
-            noise_t = gaussian(self.size)
-        temp = np.matmul(self.transition_matrix, self.xt) + c * noise_t
+            noise_t = gaussian(self.size, mean=self.noise_mean, sigma=self.noise_var)
+        temp = np.matmul(self.transition_matrix, self.xt) + self.noise_amp * noise_t
         self.xt = np.minimum(np.maximum(temp, np.zeros(self.size)), np.ones(self.size))
-        # self.quantize_state()
 
     def state_update(self):
         self.current_edge_one_hot[self.prev_edge] = 0
         self.current_edge_one_hot[self.current_edge] = 1/(self.size + 1)
-        if self.quantize_flag:
-            self.state = np.hstack((self.quantized_xt, self.current_edge_one_hot))
-        else:
-            self.state = np.hstack((self.xt, self.current_edge_one_hot))
+
+        self.state = np.hstack((self.xt, self.current_edge_one_hot))
 
     def get_next_state_reward(self, action):
         # self.state_transition()

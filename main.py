@@ -8,17 +8,19 @@ from tqdm import tqdm
 
 marker_1 = itertools.cycle(('X', '+', 'o', '.', '*', '-', '1', '2', '3', '4', '5'))
 
-config = {"num episodes": 10000,
+config = {"num episodes": 5000,
           "epsilon": 0.2,
           "gamma": 1,
+          "sparsity": 0.1,
+          "noise variance": 0.01,
+          "noise amplitude": 1,
+          "noise mean": 0,
           "learning rate": 0.1,
           "exploration decay": 0.99,
           "size": 160,
-          "quantize": False,
-          "quantize type": "uniform",
           "algorithm": ["qlearning"],
           "lookahead": [0],
-          "num trials": 200,
+          "num trials": 100,
           "test": {0: {"algorithm": "dijkstra",
                        "lookahead": 0
                        },
@@ -68,8 +70,12 @@ def execute_training(args):
 def train(config, folder):
 
     size = config["size"]
+    noise_var = config["noise variance"]
+    noise_mean = config["noise mean"]
+    noise_amp = config["noise amplitude"]
+    sparsity = config["sparsity"]
 
-    transition_matrix = generate_column_stochastic_matrix(size)
+    transition_matrix = generate_column_stochastic_matrix(size, sparsity)
     source = np.random.randint(size)
     destination, min_len = longest_destination(transition_matrix, source, min_len=int(size / 4))
 
@@ -77,24 +83,25 @@ def train(config, folder):
 
     while True:
         if min_len is None:
-            transition_matrix = generate_column_stochastic_matrix(size)
+            transition_matrix = generate_column_stochastic_matrix(size, sparsity)
             source = np.random.randint(size)
             destination, min_len = longest_destination(transition_matrix, source, min_len=int(size / 4))
         elif min_len <= 2:
-            transition_matrix = generate_column_stochastic_matrix(size)
+            transition_matrix = generate_column_stochastic_matrix(size, sparsity)
             source = np.random.randint(size)
             destination, min_len = longest_destination(transition_matrix, source, min_len=int(size / 4))
         else:
             break
+
     print("A generated")
-    quantize = config["quantize"]
-    quantize_type = config["quantize type"]
+
     rl_algo = config["algorithm"]
 
     x_init = np.random.rand(size)
     x_init = x_init / x_init.sum()
 
-    env = TrafficEnv(transition_matrix, x_init, source, destination, quantize=quantize, type=quantize_type)
+    env = TrafficEnv(transition_matrix, x_init, source, destination,
+                     noise_mean=noise_mean, noise_var=noise_var, noise_amp=noise_amp)
 
     env_file = folder + "env.p"
     with open(env_file, "wb") as f:
@@ -134,6 +141,10 @@ def test(config, folder):
 
     num_trials = config["num trials"]
     size = config["size"]
+    noise_var = config["noise variance"]
+    noise_mean = config["noise mean"]
+    noise_amp = config["noise amplitude"]
+
     time_steps = size
     test_config = config["test"]
     # print(test_config)
@@ -156,7 +167,7 @@ def test(config, folder):
     for trial in tqdm(range(num_trials)):
         W = []
         for i in range(time_steps):
-            W.append(gaussian(size, 0, 0.1))
+            W.append(gaussian(size, mean=noise_mean, sigma=noise_var))
 
         env.reset()
 
@@ -204,6 +215,11 @@ def run(config):
 
 if __name__ == "__main__":
 
-    for size in [280, 300, 320, 340, 360, 380, 400]:
-        config["size"]=size
-        run(config)
+    config["sparsity"] = 0.05
+    for nv in [0.01, 0.1]:
+
+        config["noise variance"] = nv
+
+        for size in [210]:
+            config["size"]=size
+            run(config)
