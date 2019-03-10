@@ -204,6 +204,6 @@ def run(config):
 
 if __name__ == "__main__":
 
-    for size in [300, 320, 340]:
+    for size in [280, 300, 320, 340, 360, 380, 400]:
         config["size"]=size
         run(config)

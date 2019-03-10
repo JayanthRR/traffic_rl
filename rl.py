@@ -59,7 +59,7 @@ def generate_column_stochastic_matrix(n):
     for i in range(n):
         while True:
             temp = np.random.rand(n)
-            mask = np.random.choice([0,1], (n), p=[0.99,0.01])
+            mask = np.random.choice([0,1], (n), p=[0.9,0.1])
             temp = temp * mask
             if temp.sum() > 0:
                 A[:, i] = temp/temp.sum()
@@ -198,7 +198,7 @@ class TrafficEnv:
             noise_t = gaussian(self.size)
         temp = np.matmul(self.transition_matrix, self.xt) + c * noise_t
         self.xt = np.minimum(np.maximum(temp, np.zeros(self.size)), np.ones(self.size))
-        self.quantize_state()
+        # self.quantize_state()
 
     def state_update(self):
         self.current_edge_one_hot[self.prev_edge] = 0
@@ -497,7 +497,7 @@ def train_agent(agent, num_episodes, discount_factor,
             steps += 1
 
             if steps == 10* agent.env.size:
-
+                print("cycle")
                 break
 
 
