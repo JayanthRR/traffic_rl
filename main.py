@@ -46,6 +46,7 @@ def execute_training(args):
     exploration_decay = config["exploration decay"]
 
     agent = TrafficAgent(env, learning_rate, epsilon, exploration_decay=exploration_decay)
+    seed = np.random.get_state()
 
     if algo == "qlearning":
         agent, training_rewards, total_rewards = train_agent(agent, num_episodes, gamma, softmax=False, expected=False,
@@ -56,11 +57,14 @@ def execute_training(args):
 
     agent_file = folder + algo + ".p"
     log_file = folder + "_" + algo + "_log.p"
+    rand_seed = folder + "_seed_.p"
 
     with open(agent_file, "wb") as f:
         pickle.dump(agent, f)
     with open(log_file, "wb") as f:
         pickle.dump([training_rewards, total_rewards], f)
+    with open(rand_seed, "wb") as f:
+        pickle.dump(seed, f)
 
     del agent, env
     gc.collect()
@@ -92,12 +96,13 @@ def train(config, folder):
     quantize_type = config["quantize type"]
     rl_algo = config["algorithm"]
 
-    x_init = np.random.rand(size)
-    x_init = x_init / x_init.sum()
 
     cmin = np.random.uniform(0.1, 0.2, size=(size,))
     cmax = np.random.uniform(1, 2, size=(size,))
-    costdict = [(cm, 1) for (cm, cx) in zip(cmin, cmax)]
+    costdict = [(0, 1) for (cm, cx) in zip(cmin, cmax)]
+
+    x_init = np.random.rand(size)
+    x_init = x_init / x_init.sum()
 
     env = TrafficEnv(transition_matrix, x_init, source, destination, costdict, quantize=quantize, type=quantize_type)
 
@@ -127,7 +132,6 @@ def evaluate(args):
         reward, _, path = evaluate_policies(env, W, algo, lookahead)
 
     logs = dict()
-    logs = dict()
     logs["rewards"] = reward
     logs["path"] = path
     gc.collect()
@@ -156,6 +160,10 @@ def test(config, folder):
         agent_file = folder + algo + ".p"
         with open(agent_file, "rb") as f:
             agent[algo] = pickle.load(f)
+
+    test_seed = np.random.get_state()
+    with open(folder+"_testseed.p", "wb") as f:
+        pickle.dump(test_seed, f)
 
     pool = Pool(processes=3)
     for trial in tqdm(range(num_trials)):
@@ -209,6 +217,6 @@ def run(config):
 
 if __name__ == "__main__":
 
-    for size in [100]:
+    for size in [350, 360, 370, 380, 390]:
         config["size"]=size
         run(config)

@@ -138,7 +138,8 @@ class TrafficEnv:
 
     def state_from_xt(self):
 
-        self.state = np.hstack((1, self.xt, np.square(self.xt), self.current_edge_one_hot))
+        # self.state = np.hstack((1, self.xt, np.square(self.xt), self.current_edge_one_hot))
+        self.state = np.hstack((self.xt, self.current_edge_one_hot))
 
     def reset(self):
         self.current_edge = self.source
@@ -155,7 +156,7 @@ class TrafficEnv:
             self.state = np.hstack((self.quantized_xt, self.current_edge_one_hot))/(self.size + 1)
 
     def random_init(self):
-        np.random.seed()
+        # np.random.seed()
         self.xt = np.random.rand(self.size)
         self.xt = self.xt/self.xt.sum()
         # self.quantize_state()
