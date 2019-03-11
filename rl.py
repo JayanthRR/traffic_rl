@@ -3,7 +3,6 @@ from random import choice
 # from matplotlib import pyplot as plt
 import pickle
 from graphs import *
-# np.random.RandomState(seed=10)
 import copy
 import itertools
 
@@ -109,14 +108,14 @@ def get_bin_endings(min=0.0, max=1.0, size=15, type="log"):
 
 
 class TrafficEnv:
-    def __init__(self, transition_matrix, x_init, source, destination, costdict, noise_var=0.01, noise_amp=1, noise_mean=0):
+    def __init__(self, transition_matrix, x_init, source, destination, costdict, be=0, noise_var=0.01, noise_amp=1, noise_mean=0):
 
         self.transition_matrix = transition_matrix
         self.noise_var = noise_var
         self.noise_amp = noise_amp
         self.noise_mean = noise_mean
         self.costdict = costdict
-
+        self.basis = be
         self.xt = x_init
         self.source = source
         self.destination = destination
@@ -127,10 +126,18 @@ class TrafficEnv:
         self.current_edge_one_hot = np.zeros((len(x_init)))
         self.current_edge_one_hot[self.source] = 1/(1+self.size)
 
-        self.type_ = type
+        self.state = []
+        self.state_from_xt()
 
-        self.state = np.hstack((self.xt, self.current_edge_one_hot))
         self.q_function = QFunction(len(self.state), self.size)
+
+    def state_from_xt(self):
+        if self.basis == 0:
+            self.state = np.hstack((self.xt, self.current_edge_one_hot))
+        elif self.basis == 1:
+            self.state = np.hstack((1, self.xt, np.square(self.xt)))
+        else:
+            self.state = np.hstack((1, self.xt, np.square(self.xt), self.current_edge_one_hot))
 
     def reset(self):
         self.current_edge = self.source
@@ -138,8 +145,7 @@ class TrafficEnv:
         self.current_edge_one_hot = np.zeros((len(self.xt)))
         self.current_edge_one_hot[self.source] = 1/(1+self.size)
         self.random_init()
-
-        self.state = np.hstack((self.xt, self.current_edge_one_hot))
+        self.state_from_xt()
 
     def random_init(self):
         # np.random.seed()
@@ -187,11 +193,10 @@ class TrafficEnv:
     def state_update(self):
         self.current_edge_one_hot[self.prev_edge] = 0
         self.current_edge_one_hot[self.current_edge] = 1/(self.size + 1)
-
-        self.state = np.hstack((self.xt, self.current_edge_one_hot))
+        self.state_from_xt()
 
     def get_next_state_reward(self, action):
-        # self.state_transition()
+
         reward = self.get_reward(action)
         self.prev_edge = self.current_edge
         self.current_edge = action
@@ -264,8 +269,6 @@ class QFunction:
         else:
             self.W = np.zeros((state_space_dim, action_space_dim))
 
-        # self.W_ind = np.zeros((state_space_dim, state_space_dim))
-
     def evaluate(self, state, action):
         # print(xt.shape, self.W[:, action].shape)
         temp = np.matmul(state, self.W[:, action])
@@ -296,96 +299,6 @@ class QFunction:
 
     def gradient(self, state, action):
         return state
-
-
-def sarsa(num_episodes, agent, gamma, expected=False, softmax=False):
-    # don't use. Use train agent with qlearning False instead
-    episode = 0
-
-    MAX_W = agent.q_function.W.size
-    MIN_W = -agent.q_function.W.size
-    rewards = []
-    while episode < num_episodes:
-        spath = []
-        print("e",episode)
-        episode_rewards = []
-        e_reward = 0
-        # get initial state and action
-        agent.env.reset()
-        state = agent.env.state
-        candidate_edges = agent.env.get_successor_edges()
-        if not candidate_edges:
-            episode += 1
-            continue
-
-        action = choice(candidate_edges)
-        steps = 0
-        while True:
-            agent.env.state_transition()
-            next_state, reward = agent.env.get_next_state_reward(action)
-            spath.append(action)
-            e_reward += reward
-            episode_rewards.append(e_reward) #+= reward
-            if action == agent.env.destination:
-                target_diff = reward - agent.q_function.evaluate(state, action)
-                if target_diff > MAX_W:
-                    target_diff = MAX_W
-                if target_diff < MIN_W:
-                    target_diff = MIN_W
-
-                agent.gradient_update(action, target_diff, state)
-                # agent.q_function.W[len(env.quantized_xt) + agent.env.prev_edge, action] = agent.q_function.W.size
-                print("found")
-                break
-
-            if softmax:
-                next_action = agent.get_softmax_action()
-            else:
-                next_action = agent.get_epsilon_greedy_action()
-
-            if next_action is None:
-                # target_diff = -1e6
-                # agent.gradient_update(action, target_diff)
-                agent.q_function.W[len(state) - agent.env.size + agent.env.prev_edge, action] = -agent.q_function.W.size
-                print("destination not found")
-                break
-
-            if expected:
-                candidate_actions, probs = agent.softmax_policy()
-                target_diff = reward - agent.q_function.evaluate(state, action)
-
-                for ind in range(len(candidate_actions)):
-                    target_diff += gamma * agent.q_function.evaluate(next_state, candidate_actions[ind]) * probs[ind]
-            else:
-                target_diff = reward + gamma*agent.q_function.evaluate(next_state, next_action) - \
-                          agent.q_function.evaluate(state, action)
-
-            if target_diff > MAX_W:
-                target_diff = MAX_W
-            if target_diff < MIN_W:
-                target_diff = MIN_W
-
-            # if np.isinf(target_diff):
-            #     print("how??")
-            agent.gradient_update(action, target_diff, state)
-            state = next_state
-            action = next_action
-            steps += 1
-        # plt.plot(episode_rewards)
-
-        rewards.append(episode_rewards)
-        episode += 1
-        agent.epsilon = agent.epsilon * agent.exploration_decay
-        print(len(spath))
-
-    plt.plot([len(r) for r in rewards])
-    # plt.show()
-    plt.plot([r[-1] for r in rewards])
-    # plt.plot([r[-1] for r in rewards[:100]]+[r[-1] for r in rewards[-100:]])
-    # plt.show()
-    plt.savefig("reweards and num steps")
-    plt.close()
-    return agent
 
 
 def train_agent(agent, num_episodes, discount_factor,
@@ -482,22 +395,15 @@ def train_agent(agent, num_episodes, discount_factor,
                 print("cycle")
                 break
 
-
-
         training_rewards.append(episode_rewards)
         total_rewards.append(total_reward)
 
-        if episode % 10 == 0:
+        if episode % 100 == 0:
             print("episode: ", episode, len(episode_path))
 
         episode += 1
         agent.epsilon = agent.epsilon * agent.exploration_decay
 
-    # plt.plot([len(r) for r in training_rewards], marker=next(marker), label="num steps")
-    # plt.plot(total_rewards, marker=next(marker), label="total rewards")
-    # plt.legend()
-    # plt.savefig('plots/out.pdf', transparent=True, bbox_inches='tight', pad_inches=0)
-    # plt.close()
     return agent, training_rewards, total_rewards
 
 
@@ -598,80 +504,3 @@ def evaluate_rl_policy(traffic_agent, W):
 
     return reward_incurred, aggr_reward, path_taken
 
-
-def main():
-
-    marker_1 = itertools.cycle(('X', '+', 'o', '.', '*', '-', '1', '2', '3', '4', '5'))
-
-    num_episodes = 20000
-    epsilon = 0.5
-    gamma = 1
-    learning_rate = 0.1
-
-    size = 100
-    x_init = np.random.rand(size)
-    x_init = x_init/x_init.sum()
-    transition_matrix = generate_column_stochastic_matrix(size)
-    source = np.random.randint(size)
-    destination, min_len = longest_destination(transition_matrix, source, min_len=int(size/4))
-    # destination = np.random.randint(size)
-    print(source, destination, min_len)
-
-    while min_len <= 2:
-        transition_matrix = generate_column_stochastic_matrix(size)
-        source = np.random.randint(size)
-        destination, min_len = longest_destination(transition_matrix, source, min_len=int(size / 4))
-
-    env = TrafficEnv(transition_matrix, x_init, source, destination, quantize=False, type="log")
-    agent = TrafficAgent(env, learning_rate, epsilon, exploration_decay=0.99)
-
-    agent = train_agent(agent, num_episodes, gamma, softmax=False, expected=False, qlearning=False)
-
-    num_trials = 100
-    avg_reward = 0
-    avg_reward_rl = 0
-    path_rl_total = []
-    path_total = []
-    aggr_reward_rl = []
-    aggr_reward = []
-
-    for ind in range(num_trials):
-        W = []
-        time_steps = 2*size
-        for i in range(time_steps):
-            W.append(gaussian(size, 0, 0.1))
-
-        env.reset()
-        env_copy = copy.deepcopy(env)
-        agent.env = env
-        reward_rl, _, path_rl = evaluate_rl_policy(agent, W)
-        # reward_rl, _, path_rl = evaluate_policies(env, W, policy="dijkstra", lookahead=5)
-        reward, _, path = evaluate_policies(env_copy, W, lookahead=0)
-        avg_reward += reward
-        avg_reward_rl += reward_rl
-        path_rl_total.append(path_rl)
-        path_total.append(path)
-        aggr_reward.append(reward)
-        aggr_reward_rl.append(reward_rl)
-
-    avg_reward_rl /= num_trials
-    avg_reward /= num_trials
-    plt.close()
-    plt.plot(aggr_reward, color="red", label="dijkstra", marker=next(marker_1))
-    plt.plot(aggr_reward_rl, color="green", label="rl", marker=next(marker_1))
-    plt.legend()
-    plt.savefig('plots/comparision_rewards.pdf', transparent=True, bbox_inches='tight', pad_inches=0)
-    plt.close()
-    plt.plot([len(p) for p in path_total], color="red", label="dijkstra", marker=next(marker_1))
-    plt.plot([len(p) for p in path_rl_total], color="green", label="rl", marker=next(marker_1))
-    plt.legend()
-    plt.savefig('plots/comparision step lengths.pdf', transparent=True, bbox_inches='tight', pad_inches=0)
-    plt.close()
-    # plt.show()
-    # pickle.dump(new_traffic_control, open("luckylog.p", "wb"))
-    print("hurray")
-
-
-if __name__ == "__main__":
-
-    main()

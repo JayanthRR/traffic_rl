@@ -15,11 +15,12 @@ config = {"num episodes": 5000,
           "noise variance": 0.01,
           "noise amplitude": 1,
           "noise mean": 0,
+          "basis expansion": 0,
           "costfn": 0,
           "learning rate": 0.1,
           "exploration decay": 0.99,
           "size": 160,
-          "algorithm": ["qlearning"],
+          "algorithm": "qlearning",
           "lookahead": [0],
           "num trials": 100,
           "test": {
@@ -73,12 +74,9 @@ def execute_training(args):
     gc.collect()
 
 
-def train(config, folder):
+def genAfortrain(config):
 
     size = config["size"]
-    noise_var = config["noise variance"]
-    noise_mean = config["noise mean"]
-    noise_amp = config["noise amplitude"]
     sparsity = config["sparsity"]
 
     transition_matrix = generate_column_stochastic_matrix(size, sparsity)
@@ -99,28 +97,7 @@ def train(config, folder):
         else:
             break
 
-    print("A generated")
-
-    rl_algo = config["algorithm"]
-
-    cmin = np.random.uniform(0.1, 0.2, size=(size,))
-    cmax = np.random.uniform(1, 2, size=(size,))
-    costdict = [(cm, cx) for (cm, cx) in zip(cmin, cmax)]
-
-    x_init = np.random.rand(size)
-    x_init = x_init / x_init.sum()
-
-    env = TrafficEnv(transition_matrix, x_init, source, destination, costdict,
-                     noise_mean=noise_mean, noise_var=noise_var, noise_amp=noise_amp)
-
-    env_file = folder + "env.p"
-    with open(env_file, "wb") as f:
-        pickle.dump(env, f)
-    args = [(copy.deepcopy(env), config, algo, folder) for algo in rl_algo]
-    pool = Pool(processes=1)
-    pool.map(execute_training, args)
-    # for arg in args:
-    #     execute_training(arg)
+    return transition_matrix, source, destination, min_len
 
 
 def evaluate(args):
@@ -138,7 +115,6 @@ def evaluate(args):
         lookahead = config[config_id]["lookahead"]
         reward, _, path = evaluate_policies(env, W, algo, lookahead)
 
-    logs = dict()
     logs = dict()
     logs["rewards"] = reward
     logs["path"] = path
@@ -177,7 +153,6 @@ def test(config, folder):
     with open(folder+"_testseed.p", "wb") as f:
         pickle.dump(test_seed, f)
 
-    pool = Pool(processes=3)
     for trial in tqdm(range(num_trials)):
         W = []
         for i in range(time_steps):
@@ -185,8 +160,7 @@ def test(config, folder):
 
         env.reset()
         logs={}
-        # args = [(copy.deepcopy(env), agent, W, test_config, k) for k in test_config.keys()]
-        # logs = pool.map(evaluate, args)
+
         for k in test_config.keys():
             logs[k] = evaluate([copy.deepcopy(env), agent, W, test_config, k])
 
@@ -200,28 +174,86 @@ def test(config, folder):
         pickle.dump(logdict, f)
 
 
-def run(config):
+def run(config, A, source, destination, costdict, folder):
 
-    folder = "logs/" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "/"
+    folder += datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "/"
     if not os.path.exists(folder):
         os.makedirs(folder)
 
     with open(folder+"config.p", "wb") as f:
         pickle.dump(config, f)
 
-    train(config, folder)
+    size = config["size"]
+    noise_var = config["noise variance"]
+    noise_mean = config["noise mean"]
+    noise_amp = config["noise amplitude"]
+    be = config["basis expansion"]
+
+    x_init = np.random.rand(size)
+    x_init = x_init / x_init.sum()
+
+    env = TrafficEnv(A, x_init, source, destination, costdict, be,
+                     noise_mean=noise_mean, noise_var=noise_var, noise_amp=noise_amp)
+
+    env_file = folder + "env.p"
+    with open(env_file, "wb") as f:
+        pickle.dump(env, f)
+
+    args = (copy.deepcopy(env), config, config["algorithm"], folder)
+    execute_training(args)
     print("completed training ...")
+
     test(config, folder)
     print("completed testing ...")
+
+
+def gencostfn(cfn, size):
+
+    if cfn == 1:
+        costdict = [(0, 1) for _ in range(size)]
+    elif cfn == 2:
+        cmax = np.random.uniform(0.5, 1.5, size=(size,))
+        costdict = [(0, cx) for cx in cmax]
+    else:
+        cmin = np.random.uniform(1e-5, 1e-4, size=(size,))
+        cmax = np.random.uniform(0.5, 1.5, size=(size,))
+        costdict = [(cm, cx) for [cm, cx] in zip(cmin, cmax)]
+
+    return costdict
 
 
 if __name__ == "__main__":
 
     config["sparsity"] = 0.05
-    for nv in tqdm([0.01, 0.1]):
+    # for nv in tqdm([0.01, 0.1]):
+    #
+    #     config["noise variance"] = nv
+    #
+    #     for size in [180]:
+    #         config["size"]=size
+    #         run(config)
 
-        config["noise variance"] = nv
+    folder = "logs/"
 
-        for size in [180]:
-            config["size"]=size
-            run(config)
+    for be in [0, 1, 2]:
+        config["basis expansion"] = be
+
+        for cfn in [1, 2, 3]:
+            config["costfn"] = cfn
+            folder = "logs/exp_" + str(3*be+cfn) + "/"
+
+            np.random.seed(1729)
+
+            for siz in [150, 200, 250]:
+                config["size"] = siz
+                folder += str(siz) + "/"
+
+                A, source, destination, _ = genAfortrain(config)
+                costdict = gencostfn(cfn, siz)
+
+                for var in tqdm([0.01, 0.03, 0.05, 0.07, 0.09, 0.1, 0.12, 0.14, 0.16]):
+                    config["noise variance"] = var
+                    folder += str(var) + "/"
+
+                    run(config, A, source, destination, costdict, folder)
+
