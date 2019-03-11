@@ -246,14 +246,13 @@ if __name__ == "__main__":
 
             for siz in [150, 200, 250]:
                 config["size"] = siz
-                folder += str(siz) + "/"
 
                 A, source, destination, _ = genAfortrain(config)
                 costdict = gencostfn(cfn, siz)
 
                 for var in tqdm([0.01, 0.03, 0.05, 0.07, 0.09, 0.1, 0.12, 0.14, 0.16]):
                     config["noise variance"] = var
-                    folder += str(var) + "_"
 
-                    run(config, A, source, destination, costdict, folder)
+                    run(config, A, source, destination, costdict,
+                        folder + str(siz) + "/" + str(var) + "_")
 
