@@ -15,6 +15,7 @@ config = {"num episodes": 5000,
           "noise variance": 0.01,
           "noise amplitude": 1,
           "noise mean": 0,
+          "costfn": 0,
           "learning rate": 0.1,
           "exploration decay": 0.99,
           "size": 160,
@@ -48,6 +49,7 @@ def execute_training(args):
     exploration_decay = config["exploration decay"]
 
     agent = TrafficAgent(env, learning_rate, epsilon, exploration_decay=exploration_decay)
+    seed = np.random.get_state()
 
     if algo == "qlearning":
         agent, training_rewards, total_rewards = train_agent(agent, num_episodes, gamma, softmax=False, expected=False,
@@ -58,11 +60,14 @@ def execute_training(args):
 
     agent_file = folder + algo + ".p"
     log_file = folder + "_" + algo + "_log.p"
+    rand_seed = folder + "_seed_.p"
 
     with open(agent_file, "wb") as f:
         pickle.dump(agent, f)
     with open(log_file, "wb") as f:
         pickle.dump([training_rewards, total_rewards], f)
+    with open(rand_seed, "wb") as f:
+        pickle.dump(seed, f)
 
     del agent, env
     gc.collect()
@@ -98,10 +103,14 @@ def train(config, folder):
 
     rl_algo = config["algorithm"]
 
+    cmin = np.random.uniform(0.1, 0.2, size=(size,))
+    cmax = np.random.uniform(1, 2, size=(size,))
+    costdict = [(cm, cx) for (cm, cx) in zip(cmin, cmax)]
+
     x_init = np.random.rand(size)
     x_init = x_init / x_init.sum()
 
-    env = TrafficEnv(transition_matrix, x_init, source, destination,
+    env = TrafficEnv(transition_matrix, x_init, source, destination, costdict,
                      noise_mean=noise_mean, noise_var=noise_var, noise_amp=noise_amp)
 
     env_file = folder + "env.p"
@@ -163,6 +172,10 @@ def test(config, folder):
         agent_file = folder + algo + ".p"
         with open(agent_file, "rb") as f:
             agent[algo] = pickle.load(f)
+
+    test_seed = np.random.get_state()
+    with open(folder+"_testseed.p", "wb") as f:
+        pickle.dump(test_seed, f)
 
     pool = Pool(processes=3)
     for trial in tqdm(range(num_trials)):
