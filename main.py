@@ -73,6 +73,31 @@ def execute_training(args):
     gc.collect()
 
 
+def genAfortrain(config):
+    size = config["size"]
+    sparsity = config["sparsity"]
+
+    transition_matrix = generate_column_stochastic_matrix(size, sparsity)
+    source = np.random.randint(size)
+    destination, min_len = longest_destination(transition_matrix, source, min_len=int(size / 4))
+
+    print(source, destination, min_len)
+
+    while True:
+        if min_len is None:
+            transition_matrix = generate_column_stochastic_matrix(size, sparsity)
+            source = np.random.randint(size)
+            destination, min_len = longest_destination(transition_matrix, source, min_len=int(size / 4))
+        elif min_len <= 2:
+            transition_matrix = generate_column_stochastic_matrix(size, sparsity)
+            source = np.random.randint(size)
+            destination, min_len = longest_destination(transition_matrix, source, min_len=int(size / 4))
+        else:
+            break
+
+    return transition_matrix, source, destination, min_len
+
+
 def train(config, folder):
 
     size = config["size"]
@@ -200,31 +225,36 @@ def test(config, folder):
         pickle.dump(logdict, f)
 
 
-def run(config):
+def run(config, A, source, destination, costdict):
 
-    folder = "logs/" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "/"
+    folder = "logs/" + str(config["size"]) + "/" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "/"
+
+    size = config["size"]
+    noise_var = config["noise variance"]
+    noise_mean = config["noise mean"]
+    noise_amp = config["noise amplitude"]
+
+    x_init = np.random.rand(size)
+    x_init = x_init / x_init.sum()
+
+    env = TrafficEnv(A, x_init, source, destination, costdict,
+                     noise_mean=noise_mean, noise_var=noise_var, noise_amp=noise_amp)
+
     if not os.path.exists(folder):
         os.makedirs(folder)
 
     with open(folder+"config.p", "wb") as f:
         pickle.dump(config, f)
 
-    train(config, folder)
-    print("completed training ...")
-    test(config, folder)
-    print("completed testing ...")
+    env_file = folder + "env.p"
+    with open(env_file, "wb") as f:
+        pickle.dump(env, f)
 
-    # plt.close()
-    # plt.plot(aggr_reward, color="red", label="dijkstra", marker=next(marker_1))
-    # plt.plot(aggr_reward_rl, color="green", label="rl", marker=next(marker_1))
-    # plt.legend()
-    # plt.savefig('plots/comparision_rewards.pdf', transparent=True, bbox_inches='tight', pad_inches=0)
-    # plt.close()
-    # plt.plot([len(p) for p in path_total], color="red", label="dijkstra", marker=next(marker_1))
-    # plt.plot([len(p) for p in path_rl_total], color="green", label="rl", marker=next(marker_1))
-    # plt.legend()
-    # plt.savefig('plots/comparision step lengths.pdf', transparent=True, bbox_inches='tight', pad_inches=0)
-    # plt.close()
+    args = [(copy.deepcopy(env), config, algo, folder) for algo in config["algorithm"]]
+    pool = Pool(processes=1)
+    pool.map(execute_training, args)
+
+    print("completed training ...")
 
 
 if __name__ == "__main__":
@@ -234,6 +264,68 @@ if __name__ == "__main__":
 
         config["noise variance"] = nv
 
-        for size in [180]:
+        for size in [100, 200, 300]:
             config["size"]=size
-            run(config)
+            A, source, destination, _ = genAfortrain(config)
+
+            for costfn in [0, 7]:
+                config["costfn"] = costfn
+                if costfn == 0:
+                    cmin = 0
+                    cmax = 1
+                    costdict = [(cmin, cmax) for _ in range(size)]
+                elif costfn == 1:
+                    cmin = 1e-4
+                    cmax = 1
+                    costdict = [(cmin, cmax) for _ in range(size)]
+                elif costfn == 2:
+                    cmin = 0
+                    cmax = np.random.uniform(1,1.5)
+                    costdict = [(cmin, cmax) for _ in range(size)]
+                elif costfn == 3:
+                    cmin = 0
+                    cmax = np.random.uniform(0.5, 1)
+                    costdict = [(cmin, cmax) for _ in range(size)]
+                elif costfn == 4:
+                    cmin = 1e-4
+                    cmax = np.random.uniform(1,1.5)
+                    costdict = [(cmin, cmax) for _ in range(size)]
+                elif costfn == 5:
+                    cmin = 1e-4
+                    cmax = np.random.uniform(0.5, 1)
+                    costdict = [(cmin, cmax) for _ in range(size)]
+
+                elif costfn == 6:
+                    cmin = np.random.uniform(1e-5, 1e-4, size=(size,))
+                    cmax = np.random.uniform(1, 1, size=(size,))
+                    costdict = [(cm, cx) for [cm, cx] in zip(cmin, cmax)]
+                elif costfn == 7:
+                    cmin = np.random.uniform(0, 0, size=(size,))
+                    cmax = np.random.uniform(1, 1.5, size=(size,))
+                    costdict = [(cm, cx) for [cm, cx] in zip(cmin, cmax)]
+                elif costfn == 8:
+                    cmin = np.random.uniform(0, 0, size=(size,))
+                    cmax = np.random.uniform(0.5, 1, size=(size,))
+                    costdict = [(cm, cx) for [cm, cx] in zip(cmin, cmax)]
+                elif costfn == 9:
+                    cmin = np.random.uniform(0, 0, size=(size,))
+                    cmax = np.random.uniform(0.5, 1.5, size=(size,))
+                    costdict = [(cm, cx) for [cm, cx] in zip(cmin, cmax)]
+                elif costfn == 10:
+                    cmin = np.random.uniform(1e-5, 1e-4, size=(size,))
+                    cmax = np.random.uniform(1, 1.5, size=(size,))
+                    costdict = [(cm, cx) for [cm, cx] in zip(cmin, cmax)]
+                elif costfn == 11:
+                    cmin = np.random.uniform(1e-5, 1e-4, size=(size,))
+                    cmax = np.random.uniform(0.5, 1, size=(size,))
+                    costdict = [(cm, cx) for [cm, cx] in zip(cmin, cmax)]
+                elif costfn == 12:
+                    cmin = np.random.uniform(1e-5, 1e-4, size=(size,))
+                    cmax = np.random.uniform(0.5, 1.5, size=(size,))
+                    costdict = [(cm, cx) for [cm, cx] in zip(cmin, cmax)]
+
+
+                run(config, A, source, destination, costdict)
+
+
+
