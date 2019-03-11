@@ -144,10 +144,10 @@ def test(config, folder):
         env = pickle.load(f)
 
     agent = dict()
-    for algo in config["algorithm"]:
-        agent_file = folder + algo + ".p"
-        with open(agent_file, "rb") as f:
-            agent[algo] = pickle.load(f)
+    algo = config["algorithm"]
+    agent_file = folder + algo + ".p"
+    with open(agent_file, "rb") as f:
+        agent[algo] = pickle.load(f)
 
     test_seed = np.random.get_state()
     with open(folder+"_testseed.p", "wb") as f:
@@ -253,7 +253,7 @@ if __name__ == "__main__":
 
                 for var in tqdm([0.01, 0.03, 0.05, 0.07, 0.09, 0.1, 0.12, 0.14, 0.16]):
                     config["noise variance"] = var
-                    folder += str(var) + "/"
+                    folder += str(var) + "_"
 
                     run(config, A, source, destination, costdict, folder)
 
