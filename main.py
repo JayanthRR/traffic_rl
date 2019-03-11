@@ -31,8 +31,8 @@ config = {"num episodes": 5000,
                    #     "lookahead": 5
                    #     },
                    # 2: {"algorithm": "sarsa"},
-                   1: {"algorithm": "qlearning"},
-                   2: {"algorithm": "const_dijkstra",
+                   0: {"algorithm": "qlearning"},
+                   1: {"algorithm": "const_dijkstra",
                        "lookahead": 0
                        }
                    }
