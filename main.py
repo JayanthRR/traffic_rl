@@ -257,84 +257,84 @@ def run(config, A, source, destination, costdict):
 
     print("completed training ...")
 
+    test(config, folder)
+
 
 if __name__ == "__main__":
+    #
+    # folders = glob.glob("/home/cc/traffic_rl/logs/*/")
+    # for folder in folders:
+    #     ffolders = glob.glob(folder+"*/")
+    #     for ff in ffolders:
+    #         with open(ff + "config.p", "rb") as f:
+    #             config = pickle.load(f)
+    #
+    #         test(config, ff)
 
-    folders = glob.glob("/home/cc/traffic_rl/logs/*/")
-    for folder in folders:
-        ffolders = glob.glob(folder+"*/")
-        for ff in ffolders:
-            with open(ff + "config.p", "rb") as f:
-                config = pickle.load(f)
+    config["sparsity"] = 0.05
+    for nv in tqdm([0.01, 0.1]):
 
-            test(config, ff)
+        config["noise variance"] = nv
+
+        for size in [100, 200, 300]:
+            config["size"]=size
+            A, source, destination, _ = genAfortrain(config)
+
+            for costfn in range(0, 6):
+                config["costfn"] = costfn
+                if costfn == 0:
+                    cmin = 0
+                    cmax = 1
+                    costdict = [(cmin, cmax) for _ in range(size)]
+                elif costfn == 1:
+                    cmin = 1e-4
+                    cmax = 1
+                    costdict = [(cmin, cmax) for _ in range(size)]
+                elif costfn == 2:
+                    cmin = 0
+                    cmax = np.random.uniform(1,1.5)
+                    costdict = [(cmin, cmax) for _ in range(size)]
+                elif costfn == 3:
+                    cmin = 0
+                    cmax = np.random.uniform(0.5, 1)
+                    costdict = [(cmin, cmax) for _ in range(size)]
+                elif costfn == 4:
+                    cmin = 1e-4
+                    cmax = np.random.uniform(1,1.5)
+                    costdict = [(cmin, cmax) for _ in range(size)]
+                elif costfn == 5:
+                    cmin = 1e-4
+                    cmax = np.random.uniform(0.5, 1)
+                    costdict = [(cmin, cmax) for _ in range(size)]
+
+                elif costfn == 6:
+                    cmin = np.random.uniform(1e-5, 1e-4, size=(size,))
+                    cmax = np.random.uniform(1, 1, size=(size,))
+                    costdict = [(cm, cx) for [cm, cx] in zip(cmin, cmax)]
+                elif costfn == 7:
+                    cmin = np.random.uniform(0, 0, size=(size,))
+                    cmax = np.random.uniform(1, 1.5, size=(size,))
+                    costdict = [(cm, cx) for [cm, cx] in zip(cmin, cmax)]
+                elif costfn == 8:
+                    cmin = np.random.uniform(0, 0, size=(size,))
+                    cmax = np.random.uniform(0.5, 1, size=(size,))
+                    costdict = [(cm, cx) for [cm, cx] in zip(cmin, cmax)]
+                elif costfn == 9:
+                    cmin = np.random.uniform(0, 0, size=(size,))
+                    cmax = np.random.uniform(0.5, 1.5, size=(size,))
+                    costdict = [(cm, cx) for [cm, cx] in zip(cmin, cmax)]
+                elif costfn == 10:
+                    cmin = np.random.uniform(1e-5, 1e-4, size=(size,))
+                    cmax = np.random.uniform(1, 1.5, size=(size,))
+                    costdict = [(cm, cx) for [cm, cx] in zip(cmin, cmax)]
+                elif costfn == 11:
+                    cmin = np.random.uniform(1e-5, 1e-4, size=(size,))
+                    cmax = np.random.uniform(0.5, 1, size=(size,))
+                    costdict = [(cm, cx) for [cm, cx] in zip(cmin, cmax)]
+                elif costfn == 12:
+                    cmin = np.random.uniform(1e-5, 1e-4, size=(size,))
+                    cmax = np.random.uniform(0.5, 1.5, size=(size,))
+                    costdict = [(cm, cx) for [cm, cx] in zip(cmin, cmax)]
 
 
-    #
-    # config["sparsity"] = 0.05
-    # for nv in tqdm([0.01, 0.1]):
-    #
-    #     config["noise variance"] = nv
-    #
-    #     for size in [100, 200, 300]:
-    #         config["size"]=size
-    #         A, source, destination, _ = genAfortrain(config)
-    #
-    #         for costfn in [0, 7]:
-    #             config["costfn"] = costfn
-    #             if costfn == 0:
-    #                 cmin = 0
-    #                 cmax = 1
-    #                 costdict = [(cmin, cmax) for _ in range(size)]
-    #             elif costfn == 1:
-    #                 cmin = 1e-4
-    #                 cmax = 1
-    #                 costdict = [(cmin, cmax) for _ in range(size)]
-    #             elif costfn == 2:
-    #                 cmin = 0
-    #                 cmax = np.random.uniform(1,1.5)
-    #                 costdict = [(cmin, cmax) for _ in range(size)]
-    #             elif costfn == 3:
-    #                 cmin = 0
-    #                 cmax = np.random.uniform(0.5, 1)
-    #                 costdict = [(cmin, cmax) for _ in range(size)]
-    #             elif costfn == 4:
-    #                 cmin = 1e-4
-    #                 cmax = np.random.uniform(1,1.5)
-    #                 costdict = [(cmin, cmax) for _ in range(size)]
-    #             elif costfn == 5:
-    #                 cmin = 1e-4
-    #                 cmax = np.random.uniform(0.5, 1)
-    #                 costdict = [(cmin, cmax) for _ in range(size)]
-    #
-    #             elif costfn == 6:
-    #                 cmin = np.random.uniform(1e-5, 1e-4, size=(size,))
-    #                 cmax = np.random.uniform(1, 1, size=(size,))
-    #                 costdict = [(cm, cx) for [cm, cx] in zip(cmin, cmax)]
-    #             elif costfn == 7:
-    #                 cmin = np.random.uniform(0, 0, size=(size,))
-    #                 cmax = np.random.uniform(1, 1.5, size=(size,))
-    #                 costdict = [(cm, cx) for [cm, cx] in zip(cmin, cmax)]
-    #             elif costfn == 8:
-    #                 cmin = np.random.uniform(0, 0, size=(size,))
-    #                 cmax = np.random.uniform(0.5, 1, size=(size,))
-    #                 costdict = [(cm, cx) for [cm, cx] in zip(cmin, cmax)]
-    #             elif costfn == 9:
-    #                 cmin = np.random.uniform(0, 0, size=(size,))
-    #                 cmax = np.random.uniform(0.5, 1.5, size=(size,))
-    #                 costdict = [(cm, cx) for [cm, cx] in zip(cmin, cmax)]
-    #             elif costfn == 10:
-    #                 cmin = np.random.uniform(1e-5, 1e-4, size=(size,))
-    #                 cmax = np.random.uniform(1, 1.5, size=(size,))
-    #                 costdict = [(cm, cx) for [cm, cx] in zip(cmin, cmax)]
-    #             elif costfn == 11:
-    #                 cmin = np.random.uniform(1e-5, 1e-4, size=(size,))
-    #                 cmax = np.random.uniform(0.5, 1, size=(size,))
-    #                 costdict = [(cm, cx) for [cm, cx] in zip(cmin, cmax)]
-    #             elif costfn == 12:
-    #                 cmin = np.random.uniform(1e-5, 1e-4, size=(size,))
-    #                 cmax = np.random.uniform(0.5, 1.5, size=(size,))
-    #                 costdict = [(cm, cx) for [cm, cx] in zip(cmin, cmax)]
-    #
-    #
-    #             run(config, A, source, destination, costdict)
+                run(config, A, source, destination, costdict)
