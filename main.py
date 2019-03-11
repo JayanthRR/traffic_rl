@@ -21,9 +21,10 @@ config = {"num episodes": 5000,
           "algorithm": ["qlearning"],
           "lookahead": [0],
           "num trials": 100,
-          "test": {0: {"algorithm": "dijkstra",
-                       "lookahead": 0
-                       },
+          "test": {
+                    # 0: {"algorithm": "dijkstra",
+                    #    "lookahead": 0
+                    #    },
                    # 1: {"algorithm": "dijkstra",
                    #     "lookahead": 5
                    #     },
@@ -145,7 +146,7 @@ def test(config, folder):
     noise_mean = config["noise mean"]
     noise_amp = config["noise amplitude"]
 
-    time_steps = size
+    time_steps = 5 * size
     test_config = config["test"]
     # print(test_config)
     logdict = dict().fromkeys(test_config.keys())
@@ -216,10 +217,10 @@ def run(config):
 if __name__ == "__main__":
 
     config["sparsity"] = 0.05
-    for nv in [0.01, 0.1]:
+    for nv in tqdm([0.01, 0.1]):
 
         config["noise variance"] = nv
 
-        for size in [210]:
+        for size in [180]:
             config["size"]=size
             run(config)
