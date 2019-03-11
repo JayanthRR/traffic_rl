@@ -210,11 +210,11 @@ def test(config, folder):
             W.append(gaussian(size, mean=noise_mean, sigma=noise_var))
 
         env.reset()
-
-        args = [(copy.deepcopy(env), agent, W, test_config, k) for k in test_config.keys()]
-        logs = pool.map(evaluate, args)
-        # for arg in args:
-        #     evaluate(arg)
+        logs={}
+        # args = [(copy.deepcopy(env), agent, W, test_config, k) for k in test_config.keys()]
+        # logs = pool.map(evaluate, args)
+        for k in test_config.keys():
+            logs[k] = evaluate([copy.deepcopy(env), agent, W, test_config, k])
 
         for ind in test_config.keys():
             logdict[ind]["rewards"].append(logs[ind]["rewards"])
