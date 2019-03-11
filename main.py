@@ -30,8 +30,8 @@ config = {"num episodes": 5000,
                    #     "lookahead": 5
                    #     },
                    # 2: {"algorithm": "sarsa"},
-                   1: {"algorithm": "qlearning"},
-                   2: {"algorithm": "const_dijkstra",
+                   0: {"algorithm": "qlearning"},
+                   1: {"algorithm": "const_dijkstra",
                        "lookahead": 0
                        }
                    }
@@ -184,11 +184,11 @@ def test(config, folder):
             W.append(gaussian(size, mean=noise_mean, sigma=noise_var))
 
         env.reset()
-
-        args = [(copy.deepcopy(env), agent, W, test_config, k) for k in test_config.keys()]
-        logs = pool.map(evaluate, args)
-        # for arg in args:
-        #     evaluate(arg)
+        logs={}
+        # args = [(copy.deepcopy(env), agent, W, test_config, k) for k in test_config.keys()]
+        # logs = pool.map(evaluate, args)
+        for k in test_config.keys():
+            logs[k] = evaluate([copy.deepcopy(env), agent, W, test_config, k])
 
         for ind in test_config.keys():
             logdict[ind]["rewards"].append(logs[ind]["rewards"])
@@ -213,18 +213,6 @@ def run(config):
     print("completed training ...")
     test(config, folder)
     print("completed testing ...")
-
-    # plt.close()
-    # plt.plot(aggr_reward, color="red", label="dijkstra", marker=next(marker_1))
-    # plt.plot(aggr_reward_rl, color="green", label="rl", marker=next(marker_1))
-    # plt.legend()
-    # plt.savefig('plots/comparision_rewards.pdf', transparent=True, bbox_inches='tight', pad_inches=0)
-    # plt.close()
-    # plt.plot([len(p) for p in path_total], color="red", label="dijkstra", marker=next(marker_1))
-    # plt.plot([len(p) for p in path_rl_total], color="green", label="rl", marker=next(marker_1))
-    # plt.legend()
-    # plt.savefig('plots/comparision step lengths.pdf', transparent=True, bbox_inches='tight', pad_inches=0)
-    # plt.close()
 
 
 if __name__ == "__main__":
