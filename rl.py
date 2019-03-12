@@ -391,7 +391,7 @@ def train_agent(agent, num_episodes, discount_factor,
             action = next_action
             steps += 1
 
-            if steps == 10* agent.env.size:
+            if steps == 5* agent.env.size:
                 print("cycle")
                 break
 
@@ -407,7 +407,7 @@ def train_agent(agent, num_episodes, discount_factor,
     return agent, training_rewards, total_rewards
 
 
-def evaluate_policies(env, W, policy="dijkstra", lookahead=0, const_flag=False):
+def evaluate_policies(env, W, policy="dijkstra", lookahead=0, const_flag=False, expected_flag=False):
 
     if policy == "dijkstra":
         control = dijkstra_policy
@@ -431,8 +431,16 @@ def evaluate_policies(env, W, policy="dijkstra", lookahead=0, const_flag=False):
 
         if const_flag:
             if not const_path:
-                for look in range(lookahead):
-                    xt = state_transition(env.transition_matrix, xt, env.current_edge, env.destination)
+                # computed expected xt
+                if expected_flag:
+                    ext = np.zeros_like(xt)
+                    for expi in range(10):
+                        xt = state_transition(env.transition_matrix, xt, env.current_edge, env.destination)
+                        ext += xt
+                    xt = ext/10
+
+                # for look in range(lookahead):
+                #     xt = state_transition(env.transition_matrix, xt, env.current_edge, env.destination)
 
                 const_path = const_dijkstra_policy(env.transition_matrix, xt, env.current_edge, env.destination, env.costdict)
                 # const_path = const_dijkstra_policy(env.transition_matrix, xt, env.current_edge, env.destination)

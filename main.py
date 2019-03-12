@@ -24,17 +24,10 @@ config = {"num episodes": 5000,
           "lookahead": [0],
           "num trials": 100,
           "test": {
-                    # 0: {"algorithm": "dijkstra",
-                    #    "lookahead": 0
-                    #    },
-                   # 1: {"algorithm": "dijkstra",
-                   #     "lookahead": 5
-                   #     },
-                   # 2: {"algorithm": "sarsa"},
                    0: {"algorithm": "qlearning"},
-                   1: {"algorithm": "const_dijkstra",
-                       "lookahead": 0
-                       }
+                   1: {"algorithm": "const_dijkstra", "lookahead": 0},
+                   2: {"algorithm": "const_dijkstra", "lookahead": 1},
+                   3: {"algorithm": "expected_dijkstra"},
                    }
           }
 
@@ -112,8 +105,10 @@ def evaluate(args):
         lookahead = config[config_id]["lookahead"]
         reward, _, path = evaluate_policies(env, W, algo, lookahead, const_flag=True)
     else:
+        # expected dijkstra
+
         lookahead = config[config_id]["lookahead"]
-        reward, _, path = evaluate_policies(env, W, algo, lookahead)
+        reward, _, path = evaluate_policies(env, W, algo, lookahead, const_flag=True, expected_flag=True)
 
     logs = dict()
     logs["rewards"] = reward
@@ -225,13 +220,6 @@ def gencostfn(cfn, size):
 if __name__ == "__main__":
 
     config["sparsity"] = 0.05
-    # for nv in tqdm([0.01, 0.1]):
-    #
-    #     config["noise variance"] = nv
-    #
-    #     for size in [180]:
-    #         config["size"]=size
-    #         run(config)
 
     folder = "logs/"
 
@@ -250,7 +238,7 @@ if __name__ == "__main__":
                 A, source, destination, _ = genAfortrain(config)
                 costdict = gencostfn(cfn, siz)
 
-                for var in tqdm([0.01, 0.03, 0.05, 0.07, 0.09, 0.1, 0.12, 0.14, 0.16]):
+                for var in tqdm([0.01, 0.03, 0.05, 0.07, 0.09, 0.1]):
                     config["noise variance"] = var
 
                     run(config, A, source, destination, costdict,
