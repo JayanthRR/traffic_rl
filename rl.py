@@ -150,7 +150,7 @@ class TrafficEnv:
     def random_init(self):
         # np.random.seed()
         self.xt = np.random.rand(self.size)
-        self.xt = self.xt/self.xt.sum()
+        # self.xt = self.xt/self.xt.sum()
 
     def get_successor_edges(self, current_edge=None):
         adj = []

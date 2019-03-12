@@ -45,7 +45,9 @@ for exp in exp_folders:
             # costfn = 0
             size = config["size"]
             if variance not in cross_loss.keys():
-                cross_loss[variance] = dict().fromkeys(test_config.keys())
+                cross_loss[variance] = dict()
+            for ind in test_config.keys():
+                cross_loss[variance][ind] = dict()
 
             if "logs.p" in files:
                 with open(folder + "logs.p", "rb") as f:
@@ -59,12 +61,13 @@ for exp in exp_folders:
                     plt.legend()
                     plt.xlabel("trials")
                     plt.ylabel("costs")
-                    plt.title("Spars: " + str(sparsity) + ", Var: " + str(variance) + ", cfn: " + str(costfn) +
+                    plt.title("Var: " + str(variance) + ", cfn: " + str(costfn) +
                               ", Network size: " + str(config["size"]))
                     # cross_loss[config["size"]][ind]["avg rewards"] = -np.mean(rewards)
                     cross_loss[variance][ind]["avg rewards"] = -np.mean(rewards)
+                    cross_loss[variance][ind]["std rewards"] = -np.std(rewards)
 
-                plt.savefig(folder + "Test results rewards.pdf", transparent=True, bbox_inches='tight',
+                plt.savefig(folder + "Test results rewards.png", transparent=True, bbox_inches='tight',
                             pad_inches=0)
                 plt.close()
 
@@ -76,17 +79,18 @@ for exp in exp_folders:
                     plt.legend()
                     plt.xlabel("trials")
                     plt.ylabel("number of steps")
-                    plt.title("Spars: " + str(sparsity) + ", Var: " + str(variance) + ", cfn: " + str(costfn) +
+                    plt.title("Var: " + str(variance) + ", cfn: " + str(costfn) +
                               ", Network size: " + str(config["size"]))
                     # cross_loss[config["size"]][ind]["avg steps"] = np.mean([len(path) for path in paths])
                     cross_loss[variance][ind]["avg steps"] = np.mean([len(path) for path in paths])
+                    cross_loss[variance][ind]["std steps"] = np.std([len(path) for path in paths])
 
-                plt.savefig(folder + "Test results num steps.pdf", transparent=True, bbox_inches='tight',
+                plt.savefig(folder + "Test results num steps.png", transparent=True, bbox_inches='tight',
                             pad_inches=0)
                 plt.close()
 
                 if cross_loss[variance][0]["avg steps"] >= 4 * size:
-                    del cross_loss[sparsity][variance][costfn][size]
+                    del cross_loss[variance]
 
                 # Training logs
 
@@ -101,9 +105,9 @@ for exp in exp_folders:
 
                 plt.ylabel("cost")
                 plt.xlabel("episodes")
-                plt.title("Spars: " + str(sparsity) + ", Var: " + str(variance) + ", cfn: " + str(costfn) +
+                plt.title("Var: " + str(variance) + ", cfn: " + str(costfn) +
                           ", Network size: " + str(config["size"]))
-                plt.savefig(folder + "Q Learning training rewards.pdf", transparent=True, bbox_inches='tight', pad_inches=0)
+                plt.savefig(folder + "Q Learning training rewards.png", transparent=True, bbox_inches='tight', pad_inches=0)
                 plt.close()
 
                 plt.semilogy(list(range(num_episodes))[:], [len(path) for path in qldict[0][:]],
@@ -111,9 +115,9 @@ for exp in exp_folders:
 
                 plt.ylabel("num steps")
                 plt.xlabel("episodes")
-                plt.title("Spars: " + str(sparsity) + ", Var: " + str(variance) + ", cfn: " + str(costfn) +
+                plt.title("Var: " + str(variance) + ", cfn: " + str(costfn) +
                           ", Network size: " + str(config["size"]))
-                plt.savefig(folder + "Q Learning training num steps.pdf", transparent=True, bbox_inches='tight',
+                plt.savefig(folder + "Q Learning training num steps.png", transparent=True, bbox_inches='tight',
                             pad_inches=0)
                 plt.close()
 
@@ -122,41 +126,57 @@ for exp in exp_folders:
 
         for ind in test_config.keys():
 
-            if ind == 0:
-                plt.plot(sorted(cross_loss.keys()),
-                         [cross_loss[var][ind]["avg rewards"] for var in
-                          sorted(cross_loss.keys())],
-                         label="Q learning policy", marker=next(marker))
-            else:
-                plt.plot(sorted(cross_loss.keys()),
-                         [cross_loss[var][ind]["avg rewards"] for var in
-                          sorted(cross_loss.keys())],
-                         label="const Dijkstra policy", marker=next(marker))
-            plt.legend()
-            plt.xlabel("size of network")
-            plt.ylabel("cost")
-            plt.title("Spars: " + str(sparsity) + ", size: " + str(size)+"_cfn_"+str(costfn))
-            plt.savefig(siz_folder+"Sp_"+str(sparsity)+"_size_"+str(size)+"_cfn_"+str(costfn)+"_avg rewards.pdf",
-                        transparent=True, bbox_inches='tight', pad_inches=0)
-            plt.close()
-
-            for ind in test_config.keys():
-
-                if ind==0:
-                    plt.plot(sorted(cross_loss.keys()),
-                             [cross_loss[var][ind]["avg steps"] for var in
-                              sorted(cross_loss.keys())],
+            if test_config[ind]["algorithm"] == "qlearning":
+                plt.errorbar(sorted(cross_loss.keys()),
+                             [cross_loss[var][ind]["avg rewards"] for var in sorted(cross_loss.keys())],
+                             # yerr=[cross_loss[var][ind]["std rewards"] for var in sorted(cross_loss.keys())],
                              label="Q learning policy", marker=next(marker))
-                else:
-                    plt.plot(sorted(cross_loss.keys()),
-                             [cross_loss[var][ind]["avg steps"] for var in
-                              sorted(cross_loss.keys())],
-                             label="const Dijkstra policy", marker=next(marker))
+            elif test_config[ind]["algorithm"] == "const_dijkstra":
+                plt.errorbar(sorted(cross_loss.keys()),
+                             [cross_loss[var][ind]["avg rewards"] for var in sorted(cross_loss.keys())],
+                             # yerr=[cross_loss[var][ind]["std rewards"] for var in sorted(cross_loss.keys())],
+                             label="const Dijkstra policy_"+ str(test_config[ind]["lookahead"]),
+                             marker=next(marker))
 
-            plt.legend()
-            plt.xlabel("size of network")
-            plt.ylabel("num steps")
-            plt.title("Spars: " + str(sparsity) + ", size: " + str(size)+"_cfn_"+str(costfn))
-            plt.savefig(siz_folder+"Sp_"+str(sparsity)+"_size_"+str(size)+"_cfn_"+str(costfn)+"_avg steps.pdf",
-                        transparent=True, bbox_inches='tight', pad_inches=0)
-            plt.close()
+            elif test_config[ind]["algorithm"] == "expected_dijkstra":
+                plt.errorbar(sorted(cross_loss.keys()),
+                             [cross_loss[var][ind]["avg rewards"] for var in sorted(cross_loss.keys())],
+                             # yerr=[cross_loss[var][ind]["std rewards"] for var in sorted(cross_loss.keys())],
+                             label="expected Dijkstra policy",
+                             marker=next(marker))
+        plt.legend()
+        plt.xlabel("noise variance")
+        plt.ylabel("cost")
+        plt.title("size: " + str(size)+"_cfn_"+str(costfn))
+        plt.savefig(siz_folder+"_size_"+str(size)+"_cfn_"+str(costfn)+"_avg rewards.png",
+                    transparent=True, bbox_inches='tight', pad_inches=0)
+        plt.close()
+
+        for ind in test_config.keys():
+
+            if test_config[ind]["algorithm"] == "qlearning":
+                plt.errorbar(sorted(cross_loss.keys()),
+                             [cross_loss[var][ind]["avg steps"] for var in sorted(cross_loss.keys())],
+                             # yerr=[cross_loss[var][ind]["std steps"] for var in sorted(cross_loss.keys())],
+                             label="Q learning policy", marker=next(marker))
+            elif test_config[ind]["algorithm"] == "const_dijkstra":
+                plt.errorbar(sorted(cross_loss.keys()),
+                             [cross_loss[var][ind]["avg steps"] for var in sorted(cross_loss.keys())],
+                             # yerr=[cross_loss[var][ind]["std steps"] for var in sorted(cross_loss.keys())],
+                             label="const Dijkstra policy_"+str(test_config[ind]["lookahead"]),
+                             marker=next(marker))
+
+            elif test_config[ind]["algorithm"] == "expected_dijkstra":
+                plt.errorbar(sorted(cross_loss.keys()),
+                             [cross_loss[var][ind]["avg steps"] for var in sorted(cross_loss.keys())],
+                             # yerr=[cross_loss[var][ind]["std steps"] for var in sorted(cross_loss.keys())],
+                             label="expected Dijkstra policy",
+                             marker=next(marker))
+
+        plt.legend()
+        plt.xlabel("noise variance")
+        plt.ylabel("num steps")
+        plt.title("size: " + str(size)+"_cfn_"+str(costfn))
+        plt.savefig(siz_folder+"_size_"+str(size)+"_cfn_"+str(costfn)+"_avg steps.png",
+                    transparent=True, bbox_inches='tight', pad_inches=0)
+        plt.close()
