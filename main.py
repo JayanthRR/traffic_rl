@@ -106,9 +106,7 @@ def evaluate(args):
         reward, _, path = evaluate_policies(env, W, algo, lookahead, const_flag=True)
     else:
         # expected dijkstra
-
-        lookahead = config[config_id]["lookahead"]
-        reward, _, path = evaluate_policies(env, W, algo, lookahead, const_flag=True, expected_flag=True)
+        reward, _, path = evaluate_policies(env, W, algo, lookahead=0, const_flag=True, expected_flag=True)
 
     logs = dict()
     logs["rewards"] = reward
