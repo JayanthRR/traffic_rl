@@ -150,7 +150,8 @@ class TrafficEnv:
     def random_init(self):
         # np.random.seed()
         self.xt = np.random.rand(self.size)
-        # self.xt = self.xt/self.xt.sum()
+        # self.xt = np.random.uniform(low=0.01, high=0.05, size=(self.size, ))
+        self.xt = self.xt/self.xt.sum()
 
     def get_successor_edges(self, current_edge=None):
         adj = []
@@ -255,6 +256,8 @@ class TrafficAgent:
     def gradient_update(self, action, target_diff, state):
 
         self.q_function.W[:, action] += self.learning_rate * target_diff * self.q_function.gradient(state, action)
+        self.q_function.W[:, action] = np.minimum(self.q_function.W[:, action], 0)
+        self.learning_rate = self.learning_rate * 0.99
 
         flag = np.isnan(np.sum(self.q_function.W))
         if flag:
@@ -262,10 +265,14 @@ class TrafficAgent:
 
 
 class QFunction:
-    def __init__(self, state_space_dim, action_space_dim, random_init=False):
+    def __init__(self, state_space_dim, action_space_dim, random_init=True):
 
         if random_init:
-            self.W = np.random.normal(size=(state_space_dim, action_space_dim))
+            self.W = -np.random.rand(state_space_dim, action_space_dim)
+
+            # self.W = np.vstack((-np.random.rand(action_space_dim, action_space_dim),
+            #                     np.zeros((action_space_dim, action_space_dim))))
+            # self.W = np.random.normal(size=(state_space_dim, action_space_dim))
         else:
             self.W = np.zeros((state_space_dim, action_space_dim))
 
@@ -309,10 +316,11 @@ def train_agent(agent, num_episodes, discount_factor,
     MIN_W = -agent.q_function.W.size
     training_rewards = []
     total_rewards = []
+    init_learning_rate = agent.learning_rate
 
     while episode < num_episodes:
         episode_path = []
-
+        agent.learning_rate = init_learning_rate
         episode_rewards = []
         total_reward = 0
         agent.env.reset()
@@ -337,6 +345,8 @@ def train_agent(agent, num_episodes, discount_factor,
                     target_diff = MAX_W
                 if target_diff < MIN_W:
                     target_diff = MIN_W
+                # if abs(target_diff) > 10:
+                #     print(target_diff)
 
                 agent.gradient_update(action, target_diff, state)
                 # print("found")
@@ -381,6 +391,8 @@ def train_agent(agent, num_episodes, discount_factor,
                 target_diff = MAX_W
             if target_diff < MIN_W:
                 target_diff = MIN_W
+            # if abs(target_diff) > 10:
+            #     print(target_diff)
 
             agent.gradient_update(action, target_diff, state)
 
@@ -398,10 +410,12 @@ def train_agent(agent, num_episodes, discount_factor,
         training_rewards.append(episode_rewards)
         total_rewards.append(total_reward)
 
+        episode += 1
+
         if episode % 100 == 0:
             print("episode: ", episode, len(episode_path))
+            # agent.epsilon = agent.epsilon * agent.exploration_decay
 
-        episode += 1
         agent.epsilon = agent.epsilon * agent.exploration_decay
 
     return agent, training_rewards, total_rewards
