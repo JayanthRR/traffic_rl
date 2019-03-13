@@ -230,14 +230,13 @@ if __name__ == "__main__":
             config["costfn"] = cfn
             folder = root_folder + "exp_" + str(3*be+cfn) + "/"
 
-            # 2134, 3124, 1
-            np.random.seed(1)
-
             for siz in [100]:
                 config["size"] = siz
+                costdict = gencostfn(cfn, siz)
+
+                np.random.seed(2134)
 
                 A, source, destination, _ = genAfortrain(config)
-                costdict = gencostfn(cfn, siz)
 
                 for var in tqdm([0.02, 0.04, 0.06, 0.08, 0.1]):
                     config["noise variance"] = var
