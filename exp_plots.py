@@ -17,7 +17,7 @@ def plot(folder_name=None):
     pltdir = rootdir + "pltlogs/"
 
     if not folder_name:
-        exp_folders = glob.glob(rootdir + "logs/2019-03-13-09-51-22/*/")
+        exp_folders = glob.glob(rootdir + "logs/2019-03-13-08-33-18/*/")
     else:
         exp_folders = glob.glob(rootdir + folder_name + "*/")
 
@@ -72,6 +72,8 @@ def plot(folder_name=None):
                         # cross_loss[config["size"]][ind]["avg rewards"] = -np.mean(rewards)
                         cross_loss[variance][ind]["avg rewards"] = -np.mean(rewards)
                         cross_loss[variance][ind]["std rewards"] = -np.std(rewards)
+                        cross_loss[variance][ind]["median rewards"] = -np.median(rewards)
+                        cross_loss[variance][ind]["rewards"] = [-reward for reward in rewards]
 
                     plt.savefig(folder + "Test results rewards.pdf", transparent=True, bbox_inches='tight',
                                 pad_inches=0)
@@ -90,6 +92,8 @@ def plot(folder_name=None):
                         # cross_loss[config["size"]][ind]["avg steps"] = np.mean([len(path) for path in paths])
                         cross_loss[variance][ind]["avg steps"] = np.mean([len(path) for path in paths])
                         cross_loss[variance][ind]["std steps"] = np.std([len(path) for path in paths])
+                        cross_loss[variance][ind]["median steps"] = np.median([len(path) for path in paths])
+                        cross_loss[variance][ind]["paths"] = paths
 
                     plt.savefig(folder + "Test results num steps.pdf", transparent=True, bbox_inches='tight',
                                 pad_inches=0)
@@ -131,6 +135,7 @@ def plot(folder_name=None):
                     del cross_loss[variance]
 
             for ind in test_config.keys():
+                marker = itertools.cycle(('X', '+', 'o', '.', '*', '1', '2'))
 
                 if test_config[ind]["algorithm"] == "qlearning":
                     plt.errorbar(sorted(cross_loss.keys()),
@@ -159,6 +164,7 @@ def plot(folder_name=None):
             plt.close()
 
             for ind in test_config.keys():
+                marker = itertools.cycle(('X', '+', 'o', '.', '*', '1', '2'))
 
                 if test_config[ind]["algorithm"] == "qlearning":
                     plt.errorbar(sorted(cross_loss.keys()),
@@ -186,6 +192,78 @@ def plot(folder_name=None):
             plt.savefig(siz_folder+"_size_"+str(size)+"_cfn_"+str(costfn)+"_avg steps.pdf",
                         transparent=True, bbox_inches='tight', pad_inches=0)
             plt.close()
+
+            for ind in test_config.keys():
+                marker = itertools.cycle(('X', '+', 'o', '.', '*', '1', '2'))
+
+                if test_config[ind]["algorithm"] == "qlearning":
+                    plt.errorbar(sorted(cross_loss.keys()),
+                                 [cross_loss[var][ind]["median rewards"] for var in sorted(cross_loss.keys())],
+                                 label="Q learning policy", marker=next(marker))
+                elif test_config[ind]["algorithm"] == "const_dijkstra":
+                    plt.errorbar(sorted(cross_loss.keys()),
+                                 [cross_loss[var][ind]["median rewards"] for var in sorted(cross_loss.keys())],
+                                 label="const Dijkstra policy_"+ str(test_config[ind]["lookahead"]),
+                                 marker=next(marker))
+
+                elif test_config[ind]["algorithm"] == "expected_dijkstra":
+                    plt.errorbar(sorted(cross_loss.keys()),
+                                 [cross_loss[var][ind]["median rewards"] for var in sorted(cross_loss.keys())],
+                                 label="expected Dijkstra policy",
+                                 marker=next(marker))
+            plt.legend()
+            plt.xlabel("noise variance")
+            plt.ylabel("cost")
+            plt.title("size: " + str(size)+"_cfn_"+str(costfn))
+            plt.savefig(siz_folder+"_size_"+str(size)+"_cfn_"+str(costfn)+"_median rewards.pdf",
+                        transparent=True, bbox_inches='tight', pad_inches=0)
+            plt.close()
+
+            for var in cross_loss.keys():
+                keys = [ind for ind in test_config.keys()]
+                labels = [test_config[ind]["algorithm"] for ind in keys]
+                hist_costs = [cross_loss[var][ind]["rewards"] for ind in keys]
+                plt.hist(hist_costs, 10, histtype="bar", label=labels)
+                plt.legend()
+                plt.xlabel("cost bins")
+                plt.ylabel("counts")
+                plt.title("Histogram of costs: var_" + str(var) + "_size_" + str(size)+"_cfn_"+str(costfn))
+                plt.savefig(siz_folder+"_var_" + str(var) + "_size_" + str(size)+
+                            "_cfn_"+str(costfn)+"_hist.pdf")
+                plt.close()
+
+            for var in cross_loss.keys():
+                keys = sorted([ind for ind in test_config.keys()])
+                labels = [test_config[ind]["algorithm"] for ind in keys]
+                pathdict = {}
+                for ind in keys:
+                    for trial in range(len(cross_loss[var][ind]["paths"])):
+                        pstr = '_'.join([str(p) for p in cross_loss[var][ind]["paths"][trial]])
+                        if pstr not in pathdict.keys():
+                            pathdict[pstr] = dict.fromkeys(test_config.keys(), 0)
+
+                        pathdict[pstr][ind] += 1
+
+                pstrs = list(pathdict.keys())
+                index = np.arange(len(pstrs))
+                pathstable = np.zeros((len(pstrs), len(keys)))
+                for pind in range(len(pstrs)):
+                    for ind in keys:
+                        pathstable[pind][ind] = pathdict[pstrs[pind]][ind]
+
+                bar_width = 0.15
+                for ind in keys:
+                    plt.bar(index + ind*bar_width, pathstable[:, ind], bar_width,
+                            label=test_config[ind]["algorithm"])
+
+                plt.legend()
+                plt.xticks(None)
+                plt.xlabel("paths")
+                plt.ylabel("counts")
+                plt.title("Histogram of paths: var_" + str(var) + "_size_" + str(size)+"_cfn_"+str(costfn))
+                plt.savefig(siz_folder+"_var_" + str(var) + "_size_" + str(size)+
+                            "_cfn_"+str(costfn)+"_path_hist.pdf")
+                plt.close()
 
 
 if __name__=="__main__":
