@@ -149,9 +149,9 @@ class TrafficEnv:
 
     def random_init(self):
         # np.random.seed()
-        self.xt = np.random.rand(self.size)
-        # self.xt = np.random.uniform(low=0.01, high=0.05, size=(self.size, ))
-        self.xt = self.xt/self.xt.sum()
+        # self.xt = np.random.rand(self.size)
+        self.xt = np.random.uniform(low=0.01, high=0.1, size=(self.size, ))
+        # self.xt = self.xt/self.xt.sum()
 
     def get_successor_edges(self, current_edge=None):
         adj = []
@@ -221,18 +221,27 @@ class TrafficAgent:
 
         return self.q_function.argmax(self.env.state, candidate_actions)
 
-    def softmax_policy(self):
+    def softmax_policy(self, temp=1):
         candidate_actions = self.env.get_successor_edges(current_edge=self.env.current_edge)
         if not candidate_actions:
             return None
 
         values = [self.q_function.evaluate(self.env.state, action) for action in candidate_actions]
-        probs = [np.exp(value) for value in values]
-        probs /= sum(probs)
+        probs = [np.exp(value/temp) for value in values]
+
+        indices = np.argsort(probs)
+        if sum(probs)==0:
+            pass
+        else:
+            probs /= sum(probs)
+
+        candidate_actions = [candidate_actions[ind] for ind in indices]
+
+        probs = [probs[ind] for ind in indices]
         return candidate_actions, probs
 
-    def get_softmax_action(self):
-        candidate_actions, probs = self.softmax_policy()
+    def get_softmax_action(self, temp=1):
+        candidate_actions, probs = self.softmax_policy(temp)
         rand = np.random.rand()
         cum_sum = 0
         for ind, action in enumerate(candidate_actions):
@@ -317,6 +326,9 @@ def train_agent(agent, num_episodes, discount_factor,
     training_rewards = []
     total_rewards = []
     init_learning_rate = agent.learning_rate
+    temperature = 100
+    decayflag = False
+    cntdecayflag = 0
 
     while episode < num_episodes:
         episode_path = []
@@ -341,6 +353,10 @@ def train_agent(agent, num_episodes, discount_factor,
 
             if action == agent.env.destination:
                 target_diff = step_reward - agent.q_function.evaluate(state, action)
+                cntdecayflag += 1
+                if cntdecayflag == 100:
+                    decayflag = True
+
                 if target_diff > MAX_W:
                     target_diff = MAX_W
                 if target_diff < MIN_W:
@@ -398,12 +414,13 @@ def train_agent(agent, num_episodes, discount_factor,
 
             state = next_state
             if qlearning:
-                next_action = agent.get_epsilon_greedy_action(max=True)
+                # next_action = agent.get_epsilon_greedy_action(max=False)
+                next_action = agent.get_softmax_action(temp=temperature)
 
             action = next_action
             steps += 1
 
-            if steps == 5* agent.env.size:
+            if steps == 50* agent.env.size:
                 print("cycle")
                 break
 
@@ -415,8 +432,9 @@ def train_agent(agent, num_episodes, discount_factor,
         if episode % 100 == 0:
             print("episode: ", episode, len(episode_path))
             # agent.epsilon = agent.epsilon * agent.exploration_decay
-
-        agent.epsilon = agent.epsilon * agent.exploration_decay
+        if decayflag:
+            temperature = max(temperature * 0.99, 0.1)
+            agent.epsilon = agent.epsilon * agent.exploration_decay
 
     return agent, training_rewards, total_rewards
 

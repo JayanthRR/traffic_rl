@@ -17,7 +17,7 @@ def plot(folder_name=None):
     pltdir = rootdir + "pltlogs/"
 
     if not folder_name:
-        exp_folders = glob.glob(rootdir + "logs/2019-03-13-08-33-18/*/")
+        exp_folders = glob.glob(rootdir + "logs/2019-03-13-16-31-10/*/")
     else:
         exp_folders = glob.glob(rootdir + folder_name + "*/")
 
@@ -257,7 +257,7 @@ def plot(folder_name=None):
                             label=test_config[ind]["algorithm"])
 
                 plt.legend()
-                plt.xticks(None)
+                # plt.xticks(None)
                 plt.xlabel("paths")
                 plt.ylabel("counts")
                 plt.title("Histogram of paths: var_" + str(var) + "_size_" + str(size)+"_cfn_"+str(costfn))

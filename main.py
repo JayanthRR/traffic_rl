@@ -183,9 +183,9 @@ def run(config, A, source, destination, costdict, folder):
     noise_amp = config["noise amplitude"]
     be = config["basis expansion"]
 
-    x_init = np.random.rand(size)
-    # x_init = np.random.uniform(low=0.01, high=0.05, size=(size,))
-    x_init = x_init / x_init.sum()
+    # x_init = np.random.rand(size)
+    x_init = np.random.uniform(low=0.01, high=0.1, size=(size,))
+    # x_init = x_init / x_init.sum()
 
     env = TrafficEnv(A, x_init, source, destination, costdict, be,
                      noise_mean=noise_mean, noise_var=noise_var, noise_amp=noise_amp)
@@ -219,18 +219,19 @@ def gencostfn(cfn, size):
 
 if __name__ == "__main__":
 
-    config["sparsity"] = 0.01
+    config["sparsity"] = 0.05
 
     root_folder = "logs/" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "/"
 
-    for be in [0, 1, 2]:
+    for be in [0]:
         config["basis expansion"] = be
 
-        for cfn in [1, 2, 3]:
+        for cfn in [1]:
             config["costfn"] = cfn
             folder = root_folder + "exp_" + str(3*be+cfn) + "/"
 
-            np.random.seed(2134)
+            # 2134, 3124, 1
+            np.random.seed(1)
 
             for siz in [100]:
                 config["size"] = siz
