@@ -271,7 +271,7 @@ class TrafficAgent:
 
         self.q_function.W[:, action] += self.learning_rate * target_diff * self.q_function.gradient(state, action)
         self.q_function.W[:, action] = np.minimum(self.q_function.W[:, action], 0)
-        self.learning_rate = self.learning_rate * 0.99
+        # self.learning_rate = self.learning_rate * 0.99
 
         flag = np.isnan(np.sum(self.q_function.W))
         if flag:
@@ -337,7 +337,8 @@ def train_agent(agent, num_episodes, discount_factor,
 
     while episode < num_episodes:
         episode_path = []
-        agent.learning_rate = init_learning_rate
+        # agent.learning_rate = init_learning_rate
+        agent.learning_rate = 10/(10 + episode + 1)
         episode_rewards = []
         total_reward = 0
         agent.env.reset()
@@ -437,6 +438,7 @@ def train_agent(agent, num_episodes, discount_factor,
         if episode % 100 == 0:
             print("episode: ", episode, len(episode_path))
             # agent.epsilon = agent.epsilon * agent.exploration_decay
+
         if decayflag:
             temperature = max(temperature * 0.99, 0.1)
             agent.epsilon = agent.epsilon * agent.exploration_decay
