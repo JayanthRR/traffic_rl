@@ -9,7 +9,7 @@ from exp_plots import plot
 
 marker_1 = itertools.cycle(('X', '+', 'o', '.', '*', '-', '1', '2', '3', '4', '5'))
 
-config = {"num episodes": 5000,
+config = {"num episodes": 6000,
           "epsilon": 0.2,
           "gamma": 1,
           "sparsity": 0.1,
@@ -28,7 +28,9 @@ config = {"num episodes": 5000,
                    0: {"algorithm": "qlearning"},
                    1: {"algorithm": "const_dijkstra", "lookahead": 0},
                    2: {"algorithm": "const_dijkstra", "lookahead": 1},
-                   3: {"algorithm": "expected_dijkstra"},
+                   3: {"algorithm": "const_dijkstra", "lookahead": 5},
+                   4: {"algorithm": "const_dijkstra", "lookahead": 10},
+                   5: {"algorithm": "expected_dijkstra"},
                    }
           }
 
@@ -96,22 +98,24 @@ def genAfortrain(config):
 
 def evaluate(args):
 
-    env, agent, W, config, config_id = args
+    env, agent, W, config, config_id, variance = args
     algo = config[config_id]["algorithm"]
 
     if algo in ["qlearning", "sarsa"]:
         agent[algo].env = env
-        reward, _, path = evaluate_rl_policy(agent[algo], W)
+        reward, _, path, states = evaluate_rl_policy(agent[algo], W)
     elif algo in ["const_dijkstra"]:
         lookahead = config[config_id]["lookahead"]
-        reward, _, path = evaluate_policies(env, W, algo, lookahead, const_flag=True)
+        reward, _, path, states = evaluate_policies(env, W, algo, lookahead, const_flag=True, sigma=variance)
     else:
         # expected dijkstra
-        reward, _, path = evaluate_policies(env, W, algo, lookahead=0, const_flag=True, expected_flag=True)
+        reward, _, path, states = evaluate_policies(env, W, algo, lookahead=0, const_flag=True,
+                                            expected_flag=True, sigma=variance)
 
     logs = dict()
     logs["rewards"] = reward
     logs["path"] = path
+    logs["states"] = states
     gc.collect()
     del env, agent, W
     return logs
@@ -133,6 +137,7 @@ def test(config, folder):
         logdict[ind] = dict()
         logdict[ind]["rewards"] = []
         logdict[ind]["path"] = []
+        logdict[ind]["states"] = []
 
     with open(folder+"env.p", "rb") as f:
         env = pickle.load(f)
@@ -155,12 +160,25 @@ def test(config, folder):
         env.reset()
         logs={}
 
+        min_state_len = np.float("inf")
         for k in test_config.keys():
-            logs[k] = evaluate([copy.deepcopy(env), agent, W, test_config, k])
+            logs[k] = evaluate([copy.deepcopy(env), agent, W, test_config, k, config["noise variance"]])
+            if len(logs[k]["states"]) < min_state_len:
+                min_state_len = len(logs[k]["states"])
+
+        for stateind in range(min_state_len):
+            for ind in test_config.keys():
+                try:
+                    assert((logs[ind]["states"][stateind] == logs[0]["states"][stateind]).all())
+                except:
+                    print("Something fishy", ind)
 
         for ind in test_config.keys():
             logdict[ind]["rewards"].append(logs[ind]["rewards"])
             logdict[ind]["path"].append(logs[ind]["path"])
+            logdict[ind]["states"].append(logs[ind]["states"])
+
+
         gc.collect()
 
     log_file = folder + "logs.p"
@@ -183,8 +201,8 @@ def run(config, A, source, destination, costdict, folder):
     noise_amp = config["noise amplitude"]
     be = config["basis expansion"]
 
-    # x_init = np.random.rand(size)
-    x_init = np.random.uniform(low=0.01, high=0.1, size=(size,))
+    x_init = np.random.rand(size)
+    # x_init = np.random.uniform(low=0.01, high=0.1, size=(size,))
     # x_init = x_init / x_init.sum()
 
     env = TrafficEnv(A, x_init, source, destination, costdict, be,
@@ -200,6 +218,14 @@ def run(config, A, source, destination, costdict, folder):
 
     test(config, folder)
     print("completed testing ...")
+
+
+def test_from_logs(folder_name):
+
+    with open(folder_name +"config.p", "rb") as f:
+        config = pickle.load(f)
+
+    test(config, folder_name)
 
 
 def gencostfn(cfn, size):
@@ -221,27 +247,33 @@ if __name__ == "__main__":
 
     config["sparsity"] = 0.05
 
-    root_folder = "logs/" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "/"
+    test_directly = False
 
-    for be in [0]:
-        config["basis expansion"] = be
+    if test_directly:
+        test_from_logs("logs/2019-03-16-08-25-24/exp_4/100/0.02_2019-03-16-08-25-24/")
+    else:
 
-        for cfn in [1]:
-            config["costfn"] = cfn
-            folder = root_folder + "exp_" + str(3*be+cfn) + "/"
+        root_folder = "logs/" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "/"
 
-            for siz in [100]:
-                config["size"] = siz
-                costdict = gencostfn(cfn, siz)
+        for be in [1]:
+            config["basis expansion"] = be
 
-                np.random.seed(2134)
+            for cfn in [1]:
+                config["costfn"] = cfn
+                folder = root_folder + "exp_" + str(3*be+cfn) + "/"
 
-                A, source, destination, _ = genAfortrain(config)
+                for siz in [100]:
+                    config["size"] = siz
+                    costdict = gencostfn(cfn, siz)
 
-                for var in tqdm([0.02, 0.04, 0.06, 0.08, 0.1]):
-                    config["noise variance"] = var
+                    np.random.seed(1234)
 
-                    run(config, A, source, destination, costdict,
-                        folder + str(siz) + "/" + str(var) + "_")
+                    A, source, destination, _ = genAfortrain(config)
 
-    plot(root_folder)
+                    for var in tqdm([0.02, 0.04, 0.06, 0.08, 0.1, 0.15]):
+                        config["noise variance"] = var
+
+                        run(config, A, source, destination, costdict,
+                            folder + str(siz) + "/" + str(var) + "_")
+
+        plot(root_folder)

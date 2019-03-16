@@ -17,7 +17,7 @@ def plot(folder_name=None):
     pltdir = rootdir + "pltlogs/"
 
     if not folder_name:
-        exp_folders = glob.glob(rootdir + "logs/2019-03-13-16-31-10/*/")
+        exp_folders = glob.glob(rootdir + "logs/2019-03-16-10-17-03/*/")
     else:
         exp_folders = glob.glob(rootdir + folder_name + "*/")
 
@@ -58,6 +58,7 @@ def plot(folder_name=None):
                 if "logs.p" in files:
                     with open(folder + "logs.p", "rb") as f:
                         logdict = pickle.load(f)
+                    marker = itertools.cycle(('X', '+', 'o', '.', '*', '1', '2', '3', '4', '5', '6', '7', '8', '9'))
 
                     for ind in test_config.keys():
                         rewards = logdict[ind]["rewards"]
@@ -78,6 +79,7 @@ def plot(folder_name=None):
                     plt.savefig(folder + "Test results rewards.pdf", transparent=True, bbox_inches='tight',
                                 pad_inches=0)
                     plt.close()
+                    marker = itertools.cycle(('X', '+', 'o', '.', '*', '1', '2', '3', '4', '5', '6', '7', '8', '9'))
 
                     for ind in test_config.keys():
                         paths = logdict[ind]["path"]
@@ -134,8 +136,9 @@ def plot(folder_name=None):
                 else:
                     del cross_loss[variance]
 
+            marker = itertools.cycle(('X', '+', 'o', '.', '*', '1', '2'))
+
             for ind in test_config.keys():
-                marker = itertools.cycle(('X', '+', 'o', '.', '*', '1', '2'))
 
                 if test_config[ind]["algorithm"] == "qlearning":
                     plt.errorbar(sorted(cross_loss.keys()),
@@ -163,8 +166,8 @@ def plot(folder_name=None):
                         transparent=True, bbox_inches='tight', pad_inches=0)
             plt.close()
 
+            marker = itertools.cycle(('X', '+', 'o', '.', '*', '1', '2'))
             for ind in test_config.keys():
-                marker = itertools.cycle(('X', '+', 'o', '.', '*', '1', '2'))
 
                 if test_config[ind]["algorithm"] == "qlearning":
                     plt.errorbar(sorted(cross_loss.keys()),
@@ -193,8 +196,8 @@ def plot(folder_name=None):
                         transparent=True, bbox_inches='tight', pad_inches=0)
             plt.close()
 
+            marker = itertools.cycle(('X', '+', 'o', '.', '*', '1', '2'))
             for ind in test_config.keys():
-                marker = itertools.cycle(('X', '+', 'o', '.', '*', '1', '2'))
 
                 if test_config[ind]["algorithm"] == "qlearning":
                     plt.errorbar(sorted(cross_loss.keys()),

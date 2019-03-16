@@ -1,6 +1,6 @@
 import numpy as np
 from random import choice
-# from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt
 import pickle
 from graphs import *
 import copy
@@ -149,8 +149,8 @@ class TrafficEnv:
 
     def random_init(self):
         # np.random.seed()
-        # self.xt = np.random.rand(self.size)
-        self.xt = np.random.uniform(low=0.01, high=0.1, size=(self.size, ))
+        self.xt = np.random.rand(self.size)
+        # self.xt = np.random.uniform(low=0.01, high=0.1, size=(self.size, ))
         # self.xt = self.xt/self.xt.sum()
 
     def get_successor_edges(self, current_edge=None):
@@ -158,10 +158,13 @@ class TrafficEnv:
         if not current_edge:
             current_edge = self.current_edge
         for i in range(self.transition_matrix.shape[0]):
-            if self.transition_matrix[i, current_edge] > 0:
-                if i == current_edge:
-                    continue
-                adj.append(i)
+            try:
+                if self.transition_matrix[i, current_edge] > 0:
+                    if i == current_edge:
+                        continue
+                    adj.append(i)
+            except ValueError:
+                print("error")
         return adj
 
     def get_predecessor_edges(self, current_edge=None):
@@ -227,7 +230,9 @@ class TrafficAgent:
             return None
 
         values = [self.q_function.evaluate(self.env.state, action) for action in candidate_actions]
-        probs = [np.exp(value/temp) for value in values]
+        maxval = max(values)
+        probs = [np.exp((value-maxval)/temp) for value in values]
+        # probs = [np.exp((value)/temp) for value in values]
 
         indices = np.argsort(probs)
         if sum(probs)==0:
@@ -326,7 +331,7 @@ def train_agent(agent, num_episodes, discount_factor,
     training_rewards = []
     total_rewards = []
     init_learning_rate = agent.learning_rate
-    temperature = 100
+    temperature = 50
     decayflag = False
     cntdecayflag = 0
 
@@ -354,7 +359,7 @@ def train_agent(agent, num_episodes, discount_factor,
             if action == agent.env.destination:
                 target_diff = step_reward - agent.q_function.evaluate(state, action)
                 cntdecayflag += 1
-                if cntdecayflag == 100:
+                if cntdecayflag == 1:
                     decayflag = True
 
                 if target_diff > MAX_W:
@@ -433,13 +438,13 @@ def train_agent(agent, num_episodes, discount_factor,
             print("episode: ", episode, len(episode_path))
             # agent.epsilon = agent.epsilon * agent.exploration_decay
         if decayflag:
-            temperature = max(temperature * 0.99, 0.01)
+            temperature = max(temperature * 0.99, 0.1)
             agent.epsilon = agent.epsilon * agent.exploration_decay
 
     return agent, training_rewards, total_rewards
 
 
-def evaluate_policies(env, W, policy="dijkstra", lookahead=0, const_flag=False, expected_flag=False):
+def evaluate_policies(env, W, policy="dijkstra", lookahead=0, const_flag=False, expected_flag=False, sigma=0.01):
 
     if policy == "dijkstra":
         control = dijkstra_policy
@@ -453,13 +458,15 @@ def evaluate_policies(env, W, policy="dijkstra", lookahead=0, const_flag=False, 
     reward_incurred = 0
     aggr_reward.append(reward_incurred)
     count = 0
+    states = []
+
     while env.current_edge is not env.destination:
 
         # for i in range(lookahead):
         #     env.state_transition()
         xt = env.xt
         for look in range(lookahead):
-            xt = state_transition(env.transition_matrix, xt, env.current_edge, env.destination)
+            xt = state_transition(env.transition_matrix, xt, wt=None, sigma=sigma)
 
         if const_flag:
             if not const_path:
@@ -467,7 +474,7 @@ def evaluate_policies(env, W, policy="dijkstra", lookahead=0, const_flag=False, 
                 if expected_flag:
                     ext = np.zeros_like(xt)
                     for expi in range(10):
-                        xt = state_transition(env.transition_matrix, xt, env.current_edge, env.destination)
+                        xt = state_transition(env.transition_matrix, xt, wt=None, sigma=sigma)
                         ext += xt
                     xt = ext/10
 
@@ -499,14 +506,15 @@ def evaluate_policies(env, W, policy="dijkstra", lookahead=0, const_flag=False, 
 
         env.state_transition(noise_t=wt)
         next_state, reward = env.get_next_state_reward(decision)
+        states.append(env.state)
 
         reward_incurred += reward
-        aggr_reward.append(reward_incurred)
+        aggr_reward.append(reward)
         count += 1
         if count == len(env.xt):
             break
 
-    return reward_incurred, aggr_reward, path_taken
+    return reward_incurred, aggr_reward, path_taken, states
 
 
 def evaluate_rl_policy(traffic_agent, W):
@@ -517,11 +525,14 @@ def evaluate_rl_policy(traffic_agent, W):
     reward_incurred = 0
     aggr_reward.append(reward_incurred)
     count = 0
+    qsa = []
+    states = []
 
     while traffic_agent.env.current_edge is not traffic_agent.env.destination:
         # Todo: signal flag
 
         decision = traffic_agent.get_action()
+        qsa.append(traffic_agent.q_function.evaluate(traffic_agent.env.state, decision))
 
         path_taken.append(decision)
 
@@ -534,13 +545,18 @@ def evaluate_rl_policy(traffic_agent, W):
 
         traffic_agent.env.state_transition(noise_t=wt)
         next_state, reward = traffic_agent.env.get_next_state_reward(decision)
+        states.append(traffic_agent.env.state)
 
         reward_incurred += reward
-        aggr_reward.append(reward_incurred)
+        aggr_reward.append(reward)
         count += 1
         if count == 5*len(wt):
             print("exceeded time limit")
             break
 
-    return reward_incurred, aggr_reward, path_taken
+    plt.plot(qsa)
+    plt.axhline(y=reward_incurred, color='r', linestyle='-')
+    plt.show()
+
+    return reward_incurred, aggr_reward, path_taken, states
 
