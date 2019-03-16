@@ -186,7 +186,8 @@ def test(config, folder):
         pickle.dump(logdict, f)
 
 
-def run(config, A, source, destination, costdict, folder):
+def run(config, A, source, destination, costdict, folder, initialization="random",
+        exploration="epsilon"):
 
     folder += datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "/"
     if not os.path.exists(folder):
@@ -201,12 +202,17 @@ def run(config, A, source, destination, costdict, folder):
     noise_amp = config["noise amplitude"]
     be = config["basis expansion"]
 
-    x_init = np.random.rand(size)
-    # x_init = np.random.uniform(low=0.01, high=0.1, size=(size,))
-    # x_init = x_init / x_init.sum()
+    if initialization=="random":
+        x_init = np.random.rand(size)
+    elif initialization=="range":
+        x_init = np.random.uniform(low=0.01, high=0.1, size=(size,))
+    else:
+        x_init = np.random.rand(size)
+        x_init = x_init / x_init.sum()
 
     env = TrafficEnv(A, x_init, source, destination, costdict, be,
-                     noise_mean=noise_mean, noise_var=noise_var, noise_amp=noise_amp)
+                     noise_mean=noise_mean, noise_var=noise_var,
+                     noise_amp=noise_amp, initialization=initialization, exploration=exploration)
 
     env_file = folder + "env.p"
     with open(env_file, "wb") as f:
@@ -255,10 +261,10 @@ if __name__ == "__main__":
 
         root_folder = "logs/" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "/"
 
-        for be in [1]:
+        for be in [0, 1, 2]:
             config["basis expansion"] = be
 
-            for cfn in [1]:
+            for cfn in [1, 2, 3]:
                 config["costfn"] = cfn
                 folder = root_folder + "exp_" + str(3*be+cfn) + "/"
 
@@ -270,10 +276,12 @@ if __name__ == "__main__":
 
                     A, source, destination, _ = genAfortrain(config)
 
-                    for var in tqdm([0.02, 0.04, 0.06, 0.08, 0.1, 0.15]):
+                    # for var in tqdm([0.001, 0.003, 0.005, 0.008, 0.01]):
+                    for var in tqdm([0.01, 0.05, 0.1, 0.15, 0.2]):
                         config["noise variance"] = var
 
                         run(config, A, source, destination, costdict,
-                            folder + str(siz) + "/" + str(var) + "_")
+                            folder + str(siz) + "/" + str(var) + "_", initialization="random",
+                            exploration="epsilon")
 
         plot(root_folder)

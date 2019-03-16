@@ -1,6 +1,6 @@
 import numpy as np
 from random import choice
-from matplotlib import pyplot as plt
+# from matplotlib import pyplot as plt
 import pickle
 from graphs import *
 import copy
@@ -108,7 +108,9 @@ def get_bin_endings(min=0.0, max=1.0, size=15, type="log"):
 
 
 class TrafficEnv:
-    def __init__(self, transition_matrix, x_init, source, destination, costdict, be=0, noise_var=0.01, noise_amp=1, noise_mean=0):
+    def __init__(self, transition_matrix, x_init, source, destination, costdict,
+                 be=0, noise_var=0.01, noise_amp=1, noise_mean=0, initialization="random",
+                 exploration="epsilon"):
 
         self.transition_matrix = transition_matrix
         self.noise_var = noise_var
@@ -125,7 +127,8 @@ class TrafficEnv:
         self.actions = list(range(self.size))
         self.current_edge_one_hot = np.zeros((len(x_init)))
         self.current_edge_one_hot[self.source] = 1/(1+self.size)
-
+        self.initialization=initialization
+        self.exploration=exploration
         self.state = []
         self.state_from_xt()
 
@@ -149,9 +152,13 @@ class TrafficEnv:
 
     def random_init(self):
         # np.random.seed()
-        self.xt = np.random.rand(self.size)
-        # self.xt = np.random.uniform(low=0.01, high=0.1, size=(self.size, ))
-        # self.xt = self.xt/self.xt.sum()
+        if self.initialization=="random":
+            self.xt = np.random.rand(self.size)
+        elif self.initialization == "range":
+            self.xt = np.random.uniform(low=0.01, high=0.1, size=(self.size, ))
+        else:
+            self.xt = np.random.rand(self.size)
+            self.xt = self.xt/self.xt.sum()
 
     def get_successor_edges(self, current_edge=None):
         adj = []
@@ -419,9 +426,12 @@ def train_agent(agent, num_episodes, discount_factor,
             agent.gradient_update(action, target_diff, state)
 
             state = next_state
+
             if qlearning:
-                # next_action = agent.get_epsilon_greedy_action(max=False)
-                next_action = agent.get_softmax_action(temp=temperature)
+                if agent.env.exploration == "epsilon":
+                    next_action = agent.get_epsilon_greedy_action(max=False)
+                else:
+                    next_action = agent.get_softmax_action(temp=temperature)
 
             action = next_action
             steps += 1
@@ -556,9 +566,9 @@ def evaluate_rl_policy(traffic_agent, W):
             print("exceeded time limit")
             break
 
-    plt.plot(qsa)
-    plt.axhline(y=reward_incurred, color='r', linestyle='-')
-    plt.show()
+    # plt.plot(qsa)
+    # plt.axhline(y=reward_incurred, color='r', linestyle='-')
+    # plt.show()
 
     return reward_incurred, aggr_reward, path_taken, states
 
