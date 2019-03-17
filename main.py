@@ -297,7 +297,7 @@ if __name__ == "__main__":
                     exploration = "boltzmann"
                     # for var in tqdm([0.001, 0.003, 0.005, 0.008, 0.01]):
                     # for var in tqdm([0.01, 0.05, 0.1, 0.15, 0.2]):
-                    for var in tqdm([0.3, 0.45, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]):
+                    for var in tqdm([0.1, 0.15, 0.2, 0.25, 0.3, 0.45, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]):
                         config["noise variance"] = var
 
                         run(config, A, source, destination, costdict,
