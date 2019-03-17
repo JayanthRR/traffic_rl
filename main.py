@@ -6,10 +6,11 @@ import datetime
 import os
 from tqdm import tqdm
 from exp_plots import plot
+import glob
 
 marker_1 = itertools.cycle(('X', '+', 'o', '.', '*', '-', '1', '2', '3', '4', '5'))
 
-config = {"num episodes": 6000,
+config = {"num episodes": 10000,
           "epsilon": 0.2,
           "gamma": 1,
           "sparsity": 0.1,
@@ -121,9 +122,11 @@ def evaluate(args):
     return logs
 
 
-def test(config, folder):
+def test(config, folder, num_trials=None):
 
-    num_trials = config["num trials"]
+    if not num_trials:
+        num_trials = config["num trials"]
+
     size = config["size"]
     noise_var = config["noise variance"]
     noise_mean = config["noise mean"]
@@ -170,8 +173,11 @@ def test(config, folder):
             for ind in test_config.keys():
                 try:
                     assert((logs[ind]["states"][stateind] == logs[0]["states"][stateind]).all())
+                except AssertionError as ae:
+                    print(len([pind for pind in range(len( logs[ind]["states"][stateind])) if (logs[ind]["states"][stateind][pind]== logs[0]["states"][stateind][pind])]))
+
                 except:
-                    print("Something fishy", ind)
+                    print("Something fishy", ind, stateind)
 
         for ind in test_config.keys():
             logdict[ind]["rewards"].append(logs[ind]["rewards"])
@@ -231,7 +237,7 @@ def test_from_logs(folder_name):
     with open(folder_name +"config.p", "rb") as f:
         config = pickle.load(f)
 
-    test(config, folder_name)
+    test(config, folder_name, num_trials=500)
 
 
 def gencostfn(cfn, size):
@@ -253,18 +259,29 @@ if __name__ == "__main__":
 
     config["sparsity"] = 0.05
 
-    test_directly = False
+    test_directly = True
 
     if test_directly:
-        test_from_logs("logs/2019-03-16-08-25-24/exp_4/100/0.02_2019-03-16-08-25-24/")
+        root_folder = "logs/2019-03-17-09-03-18/"
+        exp_folders = glob.glob(root_folder + "*/")
+        for exp in exp_folders:
+            siz_folders = glob.glob(exp + "*/")
+            for siz in siz_folders:
+                var_folders = glob.glob(siz + "*/")
+                for var in var_folders:
+                    print(var)
+                    test_from_logs(var)
+
+        # test_from_logs(root_folder + "exp_1/100/0.3_2019-03-17-09-03-18/")
+
     else:
 
         root_folder = "logs/" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "/"
 
-        for be in [0, 1, 2]:
+        for be in [0]:
             config["basis expansion"] = be
 
-            for cfn in [1, 2, 3]:
+            for cfn in [1]:
                 config["costfn"] = cfn
                 folder = root_folder + "exp_" + str(3*be+cfn) + "/"
 
@@ -272,16 +289,21 @@ if __name__ == "__main__":
                     config["size"] = siz
                     costdict = gencostfn(cfn, siz)
 
-                    np.random.seed(1234)
+                    np.random.seed()
 
                     A, source, destination, _ = genAfortrain(config)
 
-                    # for var in tqdm([0.001, 0.003, 0.005, 0.008, 0.01]):
-                    for var in tqdm([0.01, 0.05, 0.1, 0.15, 0.2]):
+                    for var in tqdm([0.001, 0.003, 0.005, 0.008, 0.01]):
+                    # for var in tqdm([0.01, 0.05, 0.1, 0.15, 0.2]):
+                    # for var in tqdm([0.3, 0.4, 0.5, 0.6, 0.7]):
                         config["noise variance"] = var
 
                         run(config, A, source, destination, costdict,
                             folder + str(siz) + "/" + str(var) + "_", initialization="random",
-                            exploration="epsilon")
+                            exploration="boltzmann")
 
-        plot(root_folder)
+    plot(root_folder)
+
+# 0.3 to 0.7: variance
+# increase number of episodes
+#

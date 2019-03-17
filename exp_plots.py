@@ -13,11 +13,12 @@ font = {'family' : 'normal',
 def plot(folder_name=None):
     # folders = glob.glob("/home/jayanth/2019/traffic_rl/new_logs/sp4/2019*/")
 
-    rootdir = "/home/jayanth/2019/traffic_rl/"
+    # rootdir = "/home/jayanth/2019/traffic_rl/"
+    rootdir = "/home/cc/traffic_rl/"
     pltdir = rootdir + "pltlogs/"
 
     if not folder_name:
-        exp_folders = glob.glob(rootdir + "logs/2019-03-16-10-17-03/*/")
+        exp_folders = glob.glob(rootdir + "logs/2019-03-16-13-07-45/*/")
     else:
         exp_folders = glob.glob(rootdir + folder_name + "*/")
 

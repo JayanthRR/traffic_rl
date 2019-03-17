@@ -518,7 +518,7 @@ def evaluate_policies(env, W, policy="dijkstra", lookahead=0, const_flag=False, 
 
         env.state_transition(noise_t=wt)
         next_state, reward = env.get_next_state_reward(decision)
-        states.append(env.state)
+        states.append(env.xt)
 
         reward_incurred += reward
         aggr_reward.append(reward)
@@ -557,7 +557,7 @@ def evaluate_rl_policy(traffic_agent, W):
 
         traffic_agent.env.state_transition(noise_t=wt)
         next_state, reward = traffic_agent.env.get_next_state_reward(decision)
-        states.append(traffic_agent.env.state)
+        states.append(traffic_agent.env.xt)
 
         reward_incurred += reward
         aggr_reward.append(reward)
