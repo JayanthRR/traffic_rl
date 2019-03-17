@@ -447,7 +447,6 @@ def train_agent(agent, num_episodes, discount_factor,
 
         if episode % 100 == 0:
             print("episode: ", episode, len(episode_path))
-            # agent.epsilon = agent.epsilon * agent.exploration_decay
 
         if decayflag:
             temperature = max(temperature * 0.99, 0.1)

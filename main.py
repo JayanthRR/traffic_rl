@@ -10,7 +10,7 @@ import glob
 
 marker_1 = itertools.cycle(('X', '+', 'o', '.', '*', '-', '1', '2', '3', '4', '5'))
 
-config = {"num episodes": 10000,
+config = {"num episodes": 15000,
           "epsilon": 0.2,
           "gamma": 1,
           "sparsity": 0.1,
@@ -163,26 +163,26 @@ def test(config, folder, num_trials=None):
         env.reset()
         logs={}
 
-        min_state_len = np.float("inf")
+        # min_state_len = np.float("inf")
         for k in test_config.keys():
             logs[k] = evaluate([copy.deepcopy(env), agent, W, test_config, k, config["noise variance"]])
-            if len(logs[k]["states"]) < min_state_len:
-                min_state_len = len(logs[k]["states"])
+            # if len(logs[k]["states"]) < min_state_len:
+            #     min_state_len = len(logs[k]["states"])
 
-        for stateind in range(min_state_len):
-            for ind in test_config.keys():
-                try:
-                    assert((logs[ind]["states"][stateind] == logs[0]["states"][stateind]).all())
-                except AssertionError as ae:
-                    print(len([pind for pind in range(len( logs[ind]["states"][stateind])) if (logs[ind]["states"][stateind][pind]== logs[0]["states"][stateind][pind])]))
-
-                except:
-                    print("Something fishy", ind, stateind)
+        # for stateind in range(min_state_len):
+        #     for ind in test_config.keys():
+        #         try:
+        #             assert((logs[ind]["states"][stateind] == logs[0]["states"][stateind]).all())
+        #         except AssertionError as ae:
+        #             print(len([pind for pind in range(len( logs[ind]["states"][stateind])) if (logs[ind]["states"][stateind][pind]== logs[0]["states"][stateind][pind])]))
+        #
+        #         except:
+        #             print("Something fishy", ind, stateind)
 
         for ind in test_config.keys():
             logdict[ind]["rewards"].append(logs[ind]["rewards"])
             logdict[ind]["path"].append(logs[ind]["path"])
-            logdict[ind]["states"].append(logs[ind]["states"])
+            # logdict[ind]["states"].append(logs[ind]["states"])
 
 
         gc.collect()
@@ -212,7 +212,7 @@ def run(config, A, source, destination, costdict, folder, initialization="random
         x_init = np.random.rand(size)
     elif initialization=="range":
         x_init = np.random.uniform(low=0.01, high=0.1, size=(size,))
-    else:
+    else: #normalize
         x_init = np.random.rand(size)
         x_init = x_init / x_init.sum()
 
@@ -259,7 +259,7 @@ if __name__ == "__main__":
 
     config["sparsity"] = 0.05
 
-    test_directly = True
+    test_directly = False
 
     if test_directly:
         root_folder = "logs/2019-03-17-09-03-18/"
@@ -293,9 +293,9 @@ if __name__ == "__main__":
 
                     A, source, destination, _ = genAfortrain(config)
 
-                    for var in tqdm([0.001, 0.003, 0.005, 0.008, 0.01]):
+                    # for var in tqdm([0.001, 0.003, 0.005, 0.008, 0.01]):
                     # for var in tqdm([0.01, 0.05, 0.1, 0.15, 0.2]):
-                    # for var in tqdm([0.3, 0.4, 0.5, 0.6, 0.7]):
+                    for var in tqdm([0.3, 0.45, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]):
                         config["noise variance"] = var
 
                         run(config, A, source, destination, costdict,
