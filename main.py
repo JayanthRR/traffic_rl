@@ -278,10 +278,10 @@ if __name__ == "__main__":
 
         root_folder = "logs/" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "/"
 
-        for be in [0]:
+        for be in [0, 1, 2]:
             config["basis expansion"] = be
 
-            for cfn in [1]:
+            for cfn in [1, 2, 3]:
                 config["costfn"] = cfn
                 folder = root_folder + "exp_" + str(3*be+cfn) + "/"
 
