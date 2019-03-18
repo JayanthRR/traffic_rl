@@ -1,5 +1,4 @@
 from rl import *
-from multiprocessing import Pool
 import gc
 import pickle
 import datetime
@@ -31,7 +30,10 @@ config = {"num episodes": 15000,
                    2: {"algorithm": "const_dijkstra", "lookahead": 1},
                    3: {"algorithm": "const_dijkstra", "lookahead": 5},
                    4: {"algorithm": "const_dijkstra", "lookahead": 10},
-                   5: {"algorithm": "expected_dijkstra"},
+                   5: {"algorithm": "dijkstra", "lookahead": 0},
+                   6: {"algorithm": "dijkstra", "lookahead": 1},
+                   7: {"algorithm": "dijkstra", "lookahead": 5},
+                   8: {"algorithm": "expected_dijkstra"},
                    }
           }
 
@@ -108,10 +110,15 @@ def evaluate(args):
     elif algo in ["const_dijkstra"]:
         lookahead = config[config_id]["lookahead"]
         reward, _, path, states = evaluate_policies(env, W, algo, lookahead, const_flag=True, sigma=variance)
-    else:
+    elif algo in ["expected_dijkstra"]:
         # expected dijkstra
         reward, _, path, states = evaluate_policies(env, W, algo, lookahead=0, const_flag=True,
-                                            expected_flag=True, sigma=variance)
+                                                    expected_flag=True, sigma=variance)
+    else:
+        lookahead = config[config_id]["lookahead"]
+        reward, _, path, states = evaluate_policies(env, W, algo, lookahead=lookahead, const_flag=False,
+                                                    expected_flag=False, sigma=variance)
+
 
     logs = dict()
     logs["rewards"] = reward
@@ -122,10 +129,12 @@ def evaluate(args):
     return logs
 
 
-def test(config, folder, num_trials=None):
+def test(config, folder, test_config=None, num_trials=None):
 
     if not num_trials:
         num_trials = config["num trials"]
+    if not test_config:
+        test_config = config["test"]
 
     size = config["size"]
     noise_var = config["noise variance"]
@@ -133,7 +142,6 @@ def test(config, folder, num_trials=None):
     noise_amp = config["noise amplitude"]
 
     time_steps = 5 * size
-    test_config = config["test"]
     # print(test_config)
     logdict = dict().fromkeys(test_config.keys())
     for ind in test_config.keys():
@@ -166,18 +174,6 @@ def test(config, folder, num_trials=None):
         # min_state_len = np.float("inf")
         for k in test_config.keys():
             logs[k] = evaluate([copy.deepcopy(env), agent, W, test_config, k, config["noise variance"]])
-            # if len(logs[k]["states"]) < min_state_len:
-            #     min_state_len = len(logs[k]["states"])
-
-        # for stateind in range(min_state_len):
-        #     for ind in test_config.keys():
-        #         try:
-        #             assert((logs[ind]["states"][stateind] == logs[0]["states"][stateind]).all())
-        #         except AssertionError as ae:
-        #             print(len([pind for pind in range(len( logs[ind]["states"][stateind])) if (logs[ind]["states"][stateind][pind]== logs[0]["states"][stateind][pind])]))
-        #
-        #         except:
-        #             print("Something fishy", ind, stateind)
 
         for ind in test_config.keys():
             logdict[ind]["rewards"].append(logs[ind]["rewards"])
@@ -232,12 +228,12 @@ def run(config, A, source, destination, costdict, folder, initialization="random
     print("completed testing ...")
 
 
-def test_from_logs(folder_name):
+def test_from_logs(folder_name, test_config=None, num_trials=None):
 
     with open(folder_name +"config.p", "rb") as f:
         config = pickle.load(f)
 
-    test(config, folder_name, num_trials=500)
+    test(config, folder_name, test_config=test_config, num_trials=num_trials)
 
 
 def gencostfn(cfn, size):
@@ -262,7 +258,7 @@ if __name__ == "__main__":
     test_directly = False
 
     if test_directly:
-        root_folder = "logs/2019-03-17-09-03-18/"
+        root_folder = "server_logs/logs/2019-03-17-15-55-10/"
         exp_folders = glob.glob(root_folder + "*/")
         for exp in exp_folders:
             siz_folders = glob.glob(exp + "*/")
@@ -270,7 +266,7 @@ if __name__ == "__main__":
                 var_folders = glob.glob(siz + "*/")
                 for var in var_folders:
                     print(var)
-                    test_from_logs(var)
+                    test_from_logs(var, test_config=config["test"], num_trials=100)
 
         # test_from_logs(root_folder + "exp_1/100/0.3_2019-03-17-09-03-18/")
 
@@ -297,14 +293,15 @@ if __name__ == "__main__":
                     exploration = "boltzmann"
                     # for var in tqdm([0.001, 0.003, 0.005, 0.008, 0.01]):
                     # for var in tqdm([0.01, 0.05, 0.1, 0.15, 0.2]):
-                    for var in tqdm([0.1, 0.15, 0.2, 0.25, 0.3, 0.45, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]):
+                    variances = [0.02, 0.04, 0.06, 0.08, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+                    for var in tqdm(variances):
                         config["noise variance"] = var
 
                         run(config, A, source, destination, costdict,
                             folder + str(siz) + "/" + str(var) + "_", initialization=initialization,
                             exploration=exploration)
 
-    plot(root_folder)
+    plot(root_folder, test_config=config["test"])
 
 # 0.3 to 0.7: variance
 # increase number of episodes

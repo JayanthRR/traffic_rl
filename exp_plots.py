@@ -10,7 +10,7 @@ font = {'family' : 'normal',
         'size'   : 22}
 
 
-def plot(folder_name=None):
+def plot(folder_name=None, test_config=None):
     # folders = glob.glob("/home/jayanth/2019/traffic_rl/new_logs/sp4/2019*/")
 
     # rootdir = "/home/jayanth/2019/traffic_rl/"
@@ -43,7 +43,8 @@ def plot(folder_name=None):
                     config = pickle.load(f)
 
                 print("config size", config["size"])
-                test_config = config["test"]
+                if not test_config:
+                    test_config = config["test"]
                 print(test_config.keys())
 
                 sparsity = config["sparsity"]
@@ -152,7 +153,7 @@ def plot(folder_name=None):
 
                     plt.errorbar(sorted(cross_loss.keys()),
                                  [cross_loss[var][ind]["avg rewards"] for var in sorted(cross_loss.keys())],
-                                 label="Dijkstra policy, lookahead: "+ str(test_config[ind]["lookahead"]),
+                                 label="const Dijkstra policy, lookahead: "+ str(test_config[ind]["lookahead"]),
                                  marker=next(marker), linestyle=next(linestyles))
 
                 elif test_config[ind]["algorithm"] == "expected_dijkstra":
@@ -160,6 +161,13 @@ def plot(folder_name=None):
                                  [cross_loss[var][ind]["avg rewards"] for var in sorted(cross_loss.keys())],
                                  label="expected Dijkstra policy",
                                  marker=next(marker), linestyle=next(linestyles))
+
+                elif test_config[ind]["algorithm"] == "dijkstra":
+                    plt.errorbar(sorted(cross_loss.keys()),
+                                 [cross_loss[var][ind]["avg rewards"] for var in sorted(cross_loss.keys())],
+                                 label="Dijkstra policy, lookahead: "+ str(test_config[ind]["lookahead"]),
+                                 marker=next(marker), linestyle=next(linestyles))
+
             plt.legend()
             plt.xlabel("noise variance")
             plt.ylabel("cost")
